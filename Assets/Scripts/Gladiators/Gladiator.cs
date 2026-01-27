@@ -12,6 +12,13 @@ public class Gladiator : MonoBehaviour
     [SerializeField]
     private GladiatorData data;
 
+    [Header("Weapon")]
+    [SerializeField]
+    private WeaponData equippedWeapon;
+
+    [SerializeField]
+    private int baseAttackRange = 1;
+
     [Header("Grid")]
     [SerializeField]
     private Vector2Int currentGridPosition;
@@ -49,6 +56,11 @@ public class Gladiator : MonoBehaviour
     public GladiatorData Data => data;
 
     /// <summary>
+    /// Gets the weapon currently equipped by this gladiator.
+    /// </summary>
+    public WeaponData EquippedWeapon => equippedWeapon;
+
+    /// <summary>
     /// Gets the gladiator's current grid position.
     /// </summary>
     public Vector2Int CurrentGridPosition => currentGridPosition;
@@ -72,6 +84,16 @@ public class Gladiator : MonoBehaviour
     /// Gets the remaining action points for this turn.
     /// </summary>
     public int RemainingAP => remainingAP;
+
+    /// <summary>
+    /// Gets the maximum movement points for this gladiator.
+    /// </summary>
+    public int MaxMP => data != null ? data.movementPoints : 0;
+
+    /// <summary>
+    /// Gets the maximum action points for this gladiator.
+    /// </summary>
+    public int MaxAP => data != null ? data.actionPoints : 0;
 
     private void Awake()
     {
@@ -100,6 +122,14 @@ public class Gladiator : MonoBehaviour
         {
             remainingMP = data.movementPoints;
             remainingAP = data.actionPoints;
+            if (data.startingWeapon != null)
+            {
+                EquipWeapon(data.startingWeapon);
+            }
+            else
+            {
+                UnequipWeapon();
+            }
         }
 
         SetupVisuals();
@@ -262,6 +292,180 @@ public class Gladiator : MonoBehaviour
     }
 
     /// <summary>
+    /// Equips the provided weapon on this gladiator.
+    /// </summary>
+    public void EquipWeapon(WeaponData weapon)
+    {
+        equippedWeapon = weapon;
+
+        string weaponName = equippedWeapon != null ? equippedWeapon.weaponName : "None";
+        Debug.Log($"Gladiator.EquipWeapon - {name} equipped weapon: {weaponName}", this);
+    }
+
+    /// <summary>
+    /// Unequips the current weapon, reverting to unarmed stats.
+    /// </summary>
+    public void UnequipWeapon()
+    {
+        equippedWeapon = null;
+    }
+
+    /// <summary>
+    /// Returns the current attack range based on equipped weapon or base range.
+    /// </summary>
+    public int GetAttackRange()
+    {
+        if (equippedWeapon != null && equippedWeapon.attackRange > 0)
+        {
+            return equippedWeapon.attackRange;
+        }
+
+        return baseAttackRange;
+    }
+
+    /// <summary>
+    /// Returns the total attack value including weapon damage.
+    /// </summary>
+    public int GetTotalAttack()
+    {
+        int baseAttack = data != null ? data.attack : 0;
+        int weaponDamage = equippedWeapon != null ? equippedWeapon.baseDamage : 0;
+        return baseAttack + weaponDamage;
+    }
+
+    /// <summary>
+    /// Returns a list of enemy gladiators within attack range.
+    /// </summary>
+    public List<Gladiator> GetAttackableTargets()
+    {
+        var targets = new List<Gladiator>();
+
+        if (gridManager == null)
+        {
+            gridManager = GridManager.Instance;
+        }
+
+        if (gridManager == null)
+        {
+            Debug.LogWarning("Gladiator.GetAttackableTargets - GridManager reference is null.", this);
+            return targets;
+        }
+
+        int range = GetAttackRange();
+        Debug.Log($"Gladiator.GetAttackableTargets - Checking targets within range {range} from {currentGridPosition}.", this);
+
+        var visited = new HashSet<Vector2Int>();
+        var queue = new Queue<(Vector2Int pos, int cost)>();
+
+        visited.Add(currentGridPosition);
+        queue.Enqueue((currentGridPosition, 0));
+
+        Vector2Int[] directions =
+        {
+            Vector2Int.up,
+            Vector2Int.down,
+            Vector2Int.left,
+            Vector2Int.right
+        };
+
+        while (queue.Count > 0)
+        {
+            var (pos, cost) = queue.Dequeue();
+
+            if (cost > 0)
+            {
+                GridCell cell = gridManager.GetCellAtPosition(pos);
+                if (cell != null && cell.IsOccupied && cell.OccupyingUnit != null)
+                {
+                    Gladiator target = cell.OccupyingUnit.GetComponent<Gladiator>();
+                    if (target != null && target != this && target.Data != null && data != null &&
+                        target.Data.team != data.team)
+                    {
+                        bool hasLineOfSight = equippedWeapon == null || !equippedWeapon.requiresLineOfSight ||
+                                              CombatSystem.HasLineOfSight(currentGridPosition, pos, gridManager);
+
+                        if (hasLineOfSight && !targets.Contains(target))
+                        {
+                            targets.Add(target);
+                        }
+                    }
+                }
+            }
+
+            if (cost >= range)
+            {
+                continue;
+            }
+
+            foreach (Vector2Int dir in directions)
+            {
+                Vector2Int next = pos + dir;
+                if (!gridManager.IsPositionValid(next) || visited.Contains(next))
+                {
+                    continue;
+                }
+
+                visited.Add(next);
+                queue.Enqueue((next, cost + 1));
+            }
+        }
+
+        Debug.Log($"Gladiator.GetAttackableTargets - Found {targets.Count} target(s).", this);
+        return targets;
+    }
+
+    /// <summary>
+    /// Spends movement points if possible.
+    /// </summary>
+    public bool TrySpendMP(int amount)
+    {
+        if (amount <= 0)
+        {
+            return true;
+        }
+
+        if (remainingMP < amount)
+        {
+            return false;
+        }
+
+        remainingMP -= amount;
+        return true;
+    }
+
+    /// <summary>
+    /// Restores movement points.
+    /// </summary>
+    public void RestoreMP(int amount)
+    {
+        if (amount <= 0 || data == null)
+        {
+            return;
+        }
+
+        remainingMP = Mathf.Clamp(remainingMP + amount, 0, data.movementPoints);
+    }
+
+    /// <summary>
+    /// Spends action points if possible.
+    /// </summary>
+    public bool TrySpendAP(int amount)
+    {
+        if (amount <= 0)
+        {
+            return true;
+        }
+
+        if (remainingAP < amount)
+        {
+            return false;
+        }
+
+        remainingAP -= amount;
+        return true;
+    }
+
+    /// <summary>
     /// Visually highlights all tiles within this gladiator's movement range.
     /// Valid destination tiles are colored green, and the current tile is yellow.
     /// </summary>
@@ -335,6 +539,20 @@ public class Gladiator : MonoBehaviour
         }
 
         highlightedCells.Clear();
+    }
+
+    /// <summary>
+    /// Signals that this gladiator has finished its turn.
+    /// </summary>
+    public void OnTurnEnd()
+    {
+        if (BattleManager.Instance == null)
+        {
+            Debug.LogWarning("Gladiator.OnTurnEnd - BattleManager instance is missing.", this);
+            return;
+        }
+
+        BattleManager.Instance.EndTurn();
     }
 
     /// <summary>

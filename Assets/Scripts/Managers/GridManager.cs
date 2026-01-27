@@ -334,6 +334,16 @@ public class GridManager : MonoBehaviour
             }
         }
 
+        int gridLayer = LayerMask.NameToLayer("Grid");
+        if (gridLayer == -1)
+        {
+            Debug.LogError("GridManager: 'Grid' layer not found! Please add 'Grid' layer in Project Settings -> Tags and Layers.");
+        }
+        else
+        {
+            tileObject.layer = gridLayer;
+        }
+
         // Apply scaling and spacing. Account for mesh dimensions (Plane is 10x10).
         float scaledSize = Mathf.Max(0.01f, cellSize - cellSpacing);
         MeshFilter meshFilter = tileObject.GetComponentInChildren<MeshFilter>();

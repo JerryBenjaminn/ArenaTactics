@@ -22,6 +22,13 @@ public class BattleSetupTest : MonoBehaviour
     [SerializeField]
     private GladiatorData testEnemyData;
 
+    [Header("Test Weapons")]
+    [SerializeField]
+    private WeaponData basicSword;
+
+    [SerializeField]
+    private WeaponData basicSpear;
+
     [Header("Runtime")]
     [SerializeField]
     private List<Gladiator> spawnedGladiators = new List<Gladiator>();
@@ -36,6 +43,7 @@ public class BattleSetupTest : MonoBehaviour
         }
 
         SpawnTestGladiators();
+        InitializeBattleManager();
     }
 
     /// <summary>
@@ -58,14 +66,42 @@ public class BattleSetupTest : MonoBehaviour
         }
 
         // Player gladiators.
-        SpawnGladiator(playerGladiatorPrefab, testWarriorData, new Vector2Int(1, 1), true);
-        SpawnGladiator(playerGladiatorPrefab, testWarriorData, new Vector2Int(1, 2), true);
+        Gladiator playerOne = SpawnGladiator(playerGladiatorPrefab, testWarriorData, new Vector2Int(1, 1), true);
+        Gladiator playerTwo = SpawnGladiator(playerGladiatorPrefab, testWarriorData, new Vector2Int(1, 2), true);
 
         // Enemy gladiators.
         SpawnGladiator(enemyGladiatorPrefab, testEnemyData, new Vector2Int(8, 8), false);
         SpawnGladiator(enemyGladiatorPrefab, testEnemyData, new Vector2Int(8, 7), false);
 
+        EquipTestWeapons(playerOne, playerTwo);
         Debug.Log($"BattleSetupTest: Spawned {spawnedGladiators.Count} gladiators.");
+    }
+
+    private void EquipTestWeapons(Gladiator playerOne, Gladiator playerTwo)
+    {
+        if (playerOne != null && basicSword != null)
+        {
+            playerOne.EquipWeapon(basicSword);
+            Debug.Log($"BattleSetupTest: Equipped {basicSword.weaponName} on {playerOne.name}.");
+        }
+
+        if (playerTwo != null && basicSpear != null)
+        {
+            playerTwo.EquipWeapon(basicSpear);
+            Debug.Log($"BattleSetupTest: Equipped {basicSpear.weaponName} on {playerTwo.name}.");
+        }
+    }
+
+    private void InitializeBattleManager()
+    {
+        if (BattleManager.Instance == null)
+        {
+            Debug.LogError("BattleSetupTest: No BattleManager instance found in the scene.");
+            return;
+        }
+
+        BattleManager.Instance.Initialize(spawnedGladiators);
+        BattleManager.Instance.StartBattle();
     }
 
     /// <summary>
@@ -161,6 +197,16 @@ public class BattleSetupTest : MonoBehaviour
             }
         }
 
+        // Advance the turn manually for testing.
+        if (Input.GetKeyDown(KeyCode.N))
+        {
+            if (BattleManager.Instance != null)
+            {
+                Debug.Log("BattleSetupTest: Advancing turn manually.");
+                BattleManager.Instance.EndTurn();
+            }
+        }
+
         // Log current positions of all gladiators.
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -195,6 +241,7 @@ public class BattleSetupTest : MonoBehaviour
         GUILayout.Label("Press 2: Highlight Player 2 movement");
         GUILayout.Label("Press C: Clear highlights");
         GUILayout.Label("Press R: Reset turn points");
+        GUILayout.Label("Press N: Advance turn");
         GUILayout.Label("Press Space: Log positions");
         GUILayout.Space(10f);
 

@@ -33,6 +33,9 @@ namespace ArenaTactics.Data
 
         [Header("Team")]
         public Team team = Team.Player;
+
+        [Header("Starting Equipment")]
+        public WeaponData startingWeapon;
     }
 }
 

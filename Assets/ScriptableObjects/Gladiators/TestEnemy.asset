@@ -15,7 +15,7 @@ MonoBehaviour:
   gladiatorName: Enemy
   maxHP: 100
   currentHP: 100
-  speed: 5
+  speed: 4
   attack: 10
   defense: 5
   movementPoints: 3
