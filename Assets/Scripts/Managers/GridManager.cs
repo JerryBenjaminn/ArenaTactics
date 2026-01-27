@@ -122,6 +122,11 @@ public class GridManager : MonoBehaviour
                 grid[x, y] = cell;
             }
         }
+
+        if (DebugSettings.LOG_SYSTEM)
+        {
+            Debug.Log($"GridManager: Grid initialized ({gridWidth}x{gridHeight}).", this);
+        }
     }
 
     /// <summary>

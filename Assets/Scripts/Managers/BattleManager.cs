@@ -127,13 +127,16 @@ public class BattleManager : MonoBehaviour
             .ThenBy(_ => Random.value)
             .ToList();
 
-        Debug.Log("BattleManager: Initiative order:");
-        for (int i = 0; i < turnOrder.Count; i++)
+        if (DebugSettings.LOG_TURNS)
         {
-            Gladiator gladiator = turnOrder[i];
-            string name = gladiator != null && gladiator.Data != null ? gladiator.Data.gladiatorName : "Unknown";
-            int speed = gladiator != null && gladiator.Data != null ? gladiator.Data.speed : 0;
-            Debug.Log($"  [{i}] {name} (Speed: {speed})");
+            Debug.Log("BattleManager: Initiative order:");
+            for (int i = 0; i < turnOrder.Count; i++)
+            {
+                Gladiator gladiator = turnOrder[i];
+                string name = gladiator != null && gladiator.Data != null ? gladiator.Data.gladiatorName : "Unknown";
+                int speed = gladiator != null && gladiator.Data != null ? gladiator.Data.speed : 0;
+                Debug.Log($"  [{i}] {name} (Speed: {speed})");
+            }
         }
     }
 
@@ -181,7 +184,10 @@ public class BattleManager : MonoBehaviour
         string name = currentGladiator.Data != null ? currentGladiator.Data.gladiatorName : currentGladiator.name;
         int speed = currentGladiator.Data != null ? currentGladiator.Data.speed : 0;
         string team = currentGladiator.Data != null ? currentGladiator.Data.team.ToString() : "Unknown";
-        Debug.Log($"BattleManager: Turn started for {name} (Team: {team}, Speed: {speed}).");
+        if (DebugSettings.LOG_TURNS)
+        {
+            Debug.Log($"BattleManager: Turn started for {name} (Team: {team}, Speed: {speed}).");
+        }
 
         if (currentGladiator.IsPlayerControlled)
         {
@@ -314,7 +320,10 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"BattleManager: AI taking turn for {currentGladiator.name}");
+        if (DebugSettings.LOG_AI)
+        {
+            Debug.Log($"BattleManager: AI taking turn for {currentGladiator.name}");
+        }
         StartCoroutine(AIController.ExecuteAITurn(currentGladiator));
     }
 

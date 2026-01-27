@@ -190,26 +190,38 @@ public class PlayerInputController : MonoBehaviour
 
         if (hasAttackedThisTurn)
         {
-            Debug.Log("PlayerInputController: Cannot move after attacking this turn.");
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log("PlayerInputController: Cannot move after attacking this turn.");
+            }
             return;
         }
 
         if (selectedGladiator.RemainingMP <= 0)
         {
-            Debug.Log("PlayerInputController: No MP remaining.");
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log("PlayerInputController: No MP remaining.");
+            }
             return;
         }
 
         List<Vector2Int> range = selectedGladiator.GetMovementRange();
         if (!range.Contains(targetCell.GridPosition))
         {
-            Debug.Log("PlayerInputController: Target tile is not in movement range.");
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log("PlayerInputController: Target tile is not in movement range.");
+            }
             return;
         }
 
         if (!targetCell.IsWalkable || targetCell.IsOccupied)
         {
-            Debug.Log("PlayerInputController: Target tile is not walkable or is occupied.");
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log("PlayerInputController: Target tile is not walkable or is occupied.");
+            }
             return;
         }
 
@@ -229,7 +241,10 @@ public class PlayerInputController : MonoBehaviour
 
         if (!selectedGladiator.TrySpendMP(cost))
         {
-            Debug.Log($"PlayerInputController: Not enough MP to move. Needed {cost}.");
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log($"PlayerInputController: Not enough MP to move. Needed {cost}.");
+            }
             return;
         }
 
@@ -238,7 +253,10 @@ public class PlayerInputController : MonoBehaviour
         selectedGladiator.MoveToSmooth(targetPos);
         hasMovedThisTurn = true;
 
-        Debug.Log($"PlayerInputController: Moving to {targetPos}, {selectedGladiator.RemainingMP} MP remaining.");
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"PlayerInputController: Moving to {targetPos}, {selectedGladiator.RemainingMP} MP remaining.");
+        }
         StartCoroutine(WaitForMoveCompletion());
     }
 
@@ -261,14 +279,20 @@ public class PlayerInputController : MonoBehaviour
 
         if (selectedGladiator.RemainingAP <= 0)
         {
-            Debug.Log("PlayerInputController: No AP remaining.");
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log("PlayerInputController: No AP remaining.");
+            }
             return;
         }
 
         List<Gladiator> attackableTargets = selectedGladiator.GetAttackableTargets();
         if (!attackableTargets.Contains(target))
         {
-            Debug.Log("PlayerInputController: Target is not attackable.");
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log("PlayerInputController: Target is not attackable.");
+            }
             return;
         }
 
@@ -277,7 +301,10 @@ public class PlayerInputController : MonoBehaviour
         selectedGladiator.TrySpendAP(1);
         hasAttackedThisTurn = true;
 
-        Debug.Log($"PlayerInputController: Attacked {target.name} for {damage} damage.");
+        if (DebugSettings.LOG_COMBAT)
+        {
+            Debug.Log($"PlayerInputController: Attacked {target.name} for {damage} damage.");
+        }
 
         ClearAllHighlights();
         EndTurn();
@@ -299,7 +326,10 @@ public class PlayerInputController : MonoBehaviour
         hasMovedThisTurn = false;
         lastMoveCost = 0;
 
-        Debug.Log("PlayerInputController: Move undone.");
+        if (DebugSettings.LOG_TURNS)
+        {
+            Debug.Log("PlayerInputController: Move undone.");
+        }
         ShowMovementAndAttackRange();
     }
 
@@ -406,7 +436,10 @@ public class PlayerInputController : MonoBehaviour
 
         if (!canMove && !canAttack)
         {
-            Debug.Log("PlayerInputController: No actions remaining, auto-ending turn.");
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log("PlayerInputController: No actions remaining, auto-ending turn.");
+            }
             StartAutoEndRoutine();
         }
     }

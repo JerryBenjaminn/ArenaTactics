@@ -241,7 +241,10 @@ public class Gladiator : MonoBehaviour
 
         currentHP -= damage;
         currentHP = Mathf.Clamp(currentHP, 0, data != null ? data.maxHP : 0);
-        Debug.Log($"Gladiator.TakeDamage - {name} took {damage} damage. HP: {currentHP}/{MaxHP}", this);
+        if (DebugSettings.LOG_COMBAT)
+        {
+            Debug.Log($"Gladiator.TakeDamage - {name} took {damage} damage. HP: {currentHP}/{MaxHP}", this);
+        }
 
         if (currentHP <= 0)
         {
@@ -326,7 +329,10 @@ public class Gladiator : MonoBehaviour
         healthBar = hpBarRoot.AddComponent<HealthBarUI>();
         healthBar.SetReferences(this, canvas, fillImage, bgImage);
 
-        Debug.Log($"Created procedural health bar for {name}", this);
+        if (DebugSettings.LOG_SYSTEM)
+        {
+            Debug.Log($"Created procedural health bar for {name}", this);
+        }
     }
 
     private void DestroyHealthBar()
@@ -347,12 +353,18 @@ public class Gladiator : MonoBehaviour
     {
         var reachable = new List<Vector2Int>();
 
-        Debug.Log($"Gladiator.GetMovementRange - Getting movement range from position: {currentGridPosition}, remainingMP: {remainingMP}", this);
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"Gladiator.GetMovementRange - Getting movement range from position: {currentGridPosition}, remainingMP: {remainingMP}", this);
+        }
 
         if (gridManager == null || remainingMP <= 0)
         {
             reachable.Add(currentGridPosition);
-            Debug.Log($"Gladiator.GetMovementRange - GridManager null or no MP. Only current position is reachable. Count: {reachable.Count}", this);
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log($"Gladiator.GetMovementRange - GridManager null or no MP. Only current position is reachable. Count: {reachable.Count}", this);
+            }
             return reachable;
         }
 
@@ -361,17 +373,26 @@ public class Gladiator : MonoBehaviour
 
         visited.Add(currentGridPosition);
         queue.Enqueue((currentGridPosition, 0));
-        Debug.Log($"Gladiator.GetMovementRange - Enqueued start position {currentGridPosition} with cost 0", this);
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"Gladiator.GetMovementRange - Enqueued start position {currentGridPosition} with cost 0", this);
+        }
 
         while (queue.Count > 0)
         {
             var (pos, cost) = queue.Dequeue();
             reachable.Add(pos);
-            Debug.Log($"Gladiator.GetMovementRange - Dequeued {pos} with cost {cost}, added to reachable", this);
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log($"Gladiator.GetMovementRange - Dequeued {pos} with cost {cost}, added to reachable", this);
+            }
 
             if (cost >= remainingMP)
             {
-                Debug.Log($"Gladiator.GetMovementRange - Reached max cost at {pos} (cost {cost}), not exploring neighbors.", this);
+                if (DebugSettings.VERBOSE_LOGGING)
+                {
+                    Debug.Log($"Gladiator.GetMovementRange - Reached max cost at {pos} (cost {cost}), not exploring neighbors.", this);
+                }
                 continue;
             }
 
@@ -386,11 +407,17 @@ public class Gladiator : MonoBehaviour
 
                 visited.Add(neighborPos);
                 queue.Enqueue((neighborPos, cost + 1));
-                Debug.Log($"Gladiator.GetMovementRange - Enqueued neighbor {neighborPos} with cost {cost + 1}", this);
+                if (DebugSettings.VERBOSE_LOGGING)
+                {
+                    Debug.Log($"Gladiator.GetMovementRange - Enqueued neighbor {neighborPos} with cost {cost + 1}", this);
+                }
             }
         }
 
-        Debug.Log($"Gladiator.GetMovementRange - Found {reachable.Count} reachable positions.", this);
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"Gladiator.GetMovementRange - Found {reachable.Count} reachable positions.", this);
+        }
         return reachable;
     }
 
@@ -490,7 +517,10 @@ public class Gladiator : MonoBehaviour
         if (oldCell != null && oldCell.OccupyingUnit == gameObject)
         {
             oldCell.ClearOccupied();
-            Debug.Log($"{name} moving from {startPos}. Old cell occupied: {oldCell.IsOccupied}", this);
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log($"{name} moving from {startPos}. Old cell occupied: {oldCell.IsOccupied}", this);
+            }
         }
 
         if (path.Count == 0)
@@ -539,7 +569,10 @@ public class Gladiator : MonoBehaviour
         if (finalCell != null)
         {
             finalCell.SetOccupied(gameObject);
-            Debug.Log($"{name} moved to {currentGridPosition}. New cell occupied: {finalCell.IsOccupied}", this);
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log($"{name} moved to {currentGridPosition}. New cell occupied: {finalCell.IsOccupied}", this);
+            }
         }
 
         isMoving = false;
@@ -554,7 +587,10 @@ public class Gladiator : MonoBehaviour
         equippedWeapon = weapon;
 
         string weaponName = equippedWeapon != null ? equippedWeapon.weaponName : "None";
-        Debug.Log($"Gladiator.EquipWeapon - {name} equipped weapon: {weaponName}", this);
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"Gladiator.EquipWeapon - {name} equipped weapon: {weaponName}", this);
+        }
     }
 
     /// <summary>
@@ -596,7 +632,10 @@ public class Gladiator : MonoBehaviour
         var targets = new List<Gladiator>();
 
         int range = GetAttackRange();
-        Debug.Log($"Gladiator.GetAttackableTargets - {name}, Range: {range}, Team: {data?.team}, Pos: {currentGridPosition}", this);
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"Gladiator.GetAttackableTargets - {name}, Range: {range}, Team: {data?.team}, Pos: {currentGridPosition}", this);
+        }
 
         if (data == null)
         {
@@ -641,11 +680,17 @@ public class Gladiator : MonoBehaviour
                     Gladiator target = cell.OccupyingUnit.GetComponent<Gladiator>();
                     if (target != null)
                     {
-                        Debug.Log($"  Found gladiator: {target.name}, Team: {target.Data?.team}", this);
+                        if (DebugSettings.VERBOSE_LOGGING)
+                        {
+                            Debug.Log($"  Found gladiator: {target.name}, Team: {target.Data?.team}", this);
+                        }
                         if (target != this && target.Data != null)
                         {
                             bool isEnemy = target.Data.team != data.team;
-                            Debug.Log($"    Is enemy? {isEnemy}", this);
+                            if (DebugSettings.VERBOSE_LOGGING)
+                            {
+                                Debug.Log($"    Is enemy? {isEnemy}", this);
+                            }
 
                             if (isEnemy)
                             {
@@ -680,7 +725,10 @@ public class Gladiator : MonoBehaviour
             }
         }
 
-        Debug.Log($"Gladiator.GetAttackableTargets result: {targets.Count} targets found", this);
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"Gladiator.GetAttackableTargets result: {targets.Count} targets found", this);
+        }
         return targets;
     }
 
@@ -750,7 +798,10 @@ public class Gladiator : MonoBehaviour
         }
 
         List<Vector2Int> range = GetMovementRange();
-        Debug.Log($"Gladiator.HighlightMovementRange - Highlighting {range.Count} positions.", this);
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"Gladiator.HighlightMovementRange - Highlighting {range.Count} positions.", this);
+        }
 
         foreach (Vector2Int pos in range)
         {
@@ -775,7 +826,10 @@ public class Gladiator : MonoBehaviour
             }
 
             Color color = pos == currentGridPosition ? Color.yellow : Color.green;
-            Debug.Log($"Gladiator.HighlightMovementRange - Highlighting position ({pos.x},{pos.y}) with color {(pos == currentGridPosition ? "Yellow" : "Green")}.", this);
+            if (DebugSettings.VERBOSE_LOGGING)
+            {
+                Debug.Log($"Gladiator.HighlightMovementRange - Highlighting position ({pos.x},{pos.y}) with color {(pos == currentGridPosition ? "Yellow" : "Green")}.", this);
+            }
             renderer.material.color = color;
         }
     }

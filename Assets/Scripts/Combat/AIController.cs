@@ -145,7 +145,10 @@ public static class AIController
             yield break;
         }
 
-        Debug.Log($"AIController: {aiGladiator.name} moving towards {target.name}.");
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"AIController: {aiGladiator.name} moving towards {target.name}.");
+        }
         aiGladiator.MoveToSmooth(bestMove);
 
         while (aiGladiator.IsMoving)
@@ -170,7 +173,10 @@ public static class AIController
         target.TakeDamage(damage);
         attacker.TrySpendAP(1);
 
-        Debug.Log($"AIController: {attacker.name} attacked {target.name} for {damage} damage.");
+        if (DebugSettings.LOG_COMBAT)
+        {
+            Debug.Log($"AIController: {attacker.name} attacked {target.name} for {damage} damage.");
+        }
         yield return new WaitForSeconds(0.3f);
     }
 
@@ -197,13 +203,11 @@ public static class AIController
                 GridCell cell = GridManager.Instance != null ? GridManager.Instance.GetCellAtPosition(pos) : null;
                 if (cell == null)
                 {
-                    Debug.LogWarning($"AIController: Cell at {pos} is null");
                     continue;
                 }
 
                 if (cell.IsOccupied)
                 {
-                    Debug.Log($"AIController: Skipping occupied tile at {pos}");
                     continue;
                 }
             }

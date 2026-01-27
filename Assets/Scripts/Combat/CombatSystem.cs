@@ -15,7 +15,10 @@ public static class CombatSystem
         int rawDamage = attack - defense;
         int finalDamage = Mathf.Max(1, rawDamage);
 
-        Debug.Log($"CombatSystem.CalculateDamage - Attacker: {attacker?.name}, Attack: {attack}, Defender: {defender?.name}, Defense: {defense}, Final: {finalDamage}");
+        if (DebugSettings.LOG_COMBAT)
+        {
+            Debug.Log($"CombatSystem.CalculateDamage - Attacker: {attacker?.name}, Attack: {attack}, Defender: {defender?.name}, Defense: {defense}, Final: {finalDamage}");
+        }
         return finalDamage;
     }
 
