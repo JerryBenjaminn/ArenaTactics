@@ -8373,7 +8373,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c24fc27a57c08f44aab0c174fa3d39db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InitiativeQueue
-  slotsParent: {fileID: 1117213245}
+  slotsParent: {fileID: 0}
   slotPrefab: {fileID: 439588958307502220, guid: e8c0dcfa7c500e247b74c9789330d040, type: 3}
   maxSlotsToShow: 8
 --- !u!114 &1117213247

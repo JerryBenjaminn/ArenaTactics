@@ -55,6 +55,9 @@ public class BattleManager : MonoBehaviour
     [SerializeField]
     private CurrentTurnPanel currentTurnPanel;
 
+    [SerializeField]
+    private InitiativeQueue initiativeQueue;
+
     /// <summary>
     /// Gets all gladiators participating in the battle.
     /// </summary>
@@ -159,6 +162,11 @@ public class BattleManager : MonoBehaviour
         Gladiator first = turnOrder[currentTurnIndex];
         battleState = GetStateForGladiator(first);
 
+        if (initiativeQueue != null)
+        {
+            initiativeQueue.UpdateQueue(turnOrder, currentTurnIndex);
+        }
+
         StartTurn();
     }
 
@@ -196,6 +204,11 @@ public class BattleManager : MonoBehaviour
         if (currentTurnPanel != null)
         {
             currentTurnPanel.UpdatePanel(currentGladiator);
+        }
+
+        if (initiativeQueue != null)
+        {
+            initiativeQueue.UpdateQueue(turnOrder, currentTurnIndex);
         }
 
         if (currentGladiator.IsPlayerControlled)
