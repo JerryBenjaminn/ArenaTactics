@@ -62,6 +62,14 @@ public class PlayerInputController : MonoBehaviour
                                selectedGladiator.RemainingMP > 0 &&
                                lastMoveCost > 0;
 
+    /// <summary>
+    /// Returns whether undo is currently available.
+    /// </summary>
+    public bool CanUndo()
+    {
+        return selectedGladiator != null && hasMovedThisTurn && !hasAttackedThisTurn;
+    }
+
     private void Awake()
     {
         if (instance != null && instance != this)

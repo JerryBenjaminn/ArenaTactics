@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: TestEnemy
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorData
   gladiatorName: Enemy
-  maxHP: 100
-  currentHP: 100
+  maxHP: 80
+  currentHP: 80
   speed: 4
-  attack: 10
-  defense: 5
+  attack: 8
+  defense: 2
   movementPoints: 3
   actionPoints: 1
   team: 1
+  startingWeapon: {fileID: 0}

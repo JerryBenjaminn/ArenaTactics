@@ -51,6 +51,10 @@ public class BattleManager : MonoBehaviour
     [SerializeField]
     private TurnPhase turnPhase = TurnPhase.WaitingForInput;
 
+    [Header("UI")]
+    [SerializeField]
+    private CurrentTurnPanel currentTurnPanel;
+
     /// <summary>
     /// Gets all gladiators participating in the battle.
     /// </summary>
@@ -187,6 +191,11 @@ public class BattleManager : MonoBehaviour
         if (DebugSettings.LOG_TURNS)
         {
             Debug.Log($"BattleManager: Turn started for {name} (Team: {team}, Speed: {speed}).");
+        }
+
+        if (currentTurnPanel != null)
+        {
+            currentTurnPanel.UpdatePanel(currentGladiator);
         }
 
         if (currentGladiator.IsPlayerControlled)
