@@ -137,6 +137,14 @@ public class Gladiator : MonoBehaviour
         transform.localScale = new Vector3(0.5f, 1f, 0.5f);
     }
 
+    private void Start()
+    {
+        if (GetComponent<GladiatorHoverEffect>() == null)
+        {
+            gameObject.AddComponent<GladiatorHoverEffect>();
+        }
+    }
+
     /// <summary>
     /// Initializes the gladiator with data, starting position and control side.
     /// </summary>
