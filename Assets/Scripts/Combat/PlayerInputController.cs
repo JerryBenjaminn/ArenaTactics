@@ -101,6 +101,16 @@ public class PlayerInputController : MonoBehaviour
 
     private void Update()
     {
+        if (BattleManager.Instance != null)
+        {
+            BattleManager.BattleState state = BattleManager.Instance.GetBattleState();
+            if (state == BattleManager.BattleState.Deployment)
+            {
+                Debug.Log("PlayerInputController.Update - Skipping, in Deployment");
+                return;
+            }
+        }
+
         if (BattleManager.Instance == null ||
             BattleManager.Instance.CurrentBattleState != BattleManager.BattleState.PlayerTurn)
         {

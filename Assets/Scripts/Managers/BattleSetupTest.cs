@@ -65,13 +65,13 @@ public class BattleSetupTest : MonoBehaviour
             return;
         }
 
-        // Player gladiators.
-        Gladiator playerOne = SpawnGladiator(playerGladiatorPrefab, testWarriorData, new Vector2Int(1, 1), true);
-        Gladiator playerTwo = SpawnGladiator(playerGladiatorPrefab, testWarriorData, new Vector2Int(1, 2), true);
+        // Player gladiators (initially placed in deployment zone).
+        Gladiator playerOne = SpawnGladiator(playerGladiatorPrefab, testWarriorData, new Vector2Int(0, 0), true, true);
+        Gladiator playerTwo = SpawnGladiator(playerGladiatorPrefab, testWarriorData, new Vector2Int(1, 0), true, true);
 
-        // Enemy gladiators.
-        SpawnGladiator(enemyGladiatorPrefab, testEnemyData, new Vector2Int(8, 8), false);
-        SpawnGladiator(enemyGladiatorPrefab, testEnemyData, new Vector2Int(8, 7), false);
+        // Enemy gladiators (spawned off-grid; auto-deployed by DeploymentManager).
+        SpawnGladiator(enemyGladiatorPrefab, testEnemyData, new Vector2Int(0, 9), false, false);
+        SpawnGladiator(enemyGladiatorPrefab, testEnemyData, new Vector2Int(1, 9), false, false);
 
         EquipTestWeapons(playerOne, playerTwo);
         Debug.Log($"BattleSetupTest: Spawned {spawnedGladiators.Count} gladiators.");
@@ -101,7 +101,6 @@ public class BattleSetupTest : MonoBehaviour
         }
 
         BattleManager.Instance.Initialize(spawnedGladiators);
-        BattleManager.Instance.StartBattle();
     }
 
     /// <summary>
@@ -112,7 +111,7 @@ public class BattleSetupTest : MonoBehaviour
     /// <param name="gridPos">The desired starting grid position.</param>
     /// <param name="isPlayer">Whether the gladiator is player-controlled.</param>
     /// <returns>The spawned <see cref="Gladiator"/> component, or <c>null</c> if spawning failed.</returns>
-    public Gladiator SpawnGladiator(GameObject prefab, GladiatorData data, Vector2Int gridPos, bool isPlayer)
+    public Gladiator SpawnGladiator(GameObject prefab, GladiatorData data, Vector2Int gridPos, bool isPlayer, bool placeOnGrid = true)
     {
         if (prefab == null || data == null)
         {
@@ -137,7 +136,7 @@ public class BattleSetupTest : MonoBehaviour
             return null;
         }
 
-        gladiator.Initialize(data, gridPos, isPlayer);
+        gladiator.Initialize(data, gridPos, isPlayer, placeOnGrid);
         spawnedGladiators.Add(gladiator);
 
         gladiator.CreateHealthBar();
@@ -229,43 +228,6 @@ public class BattleSetupTest : MonoBehaviour
         }
     }
 
-    private void OnGUI()
-    {
-        if (spawnedGladiators == null)
-        {
-            return;
-        }
-
-        GUILayout.BeginArea(new Rect(10f, 10f, 340f, 400f), GUI.skin.box);
-
-        GUILayout.Label("Battle Setup Test Controls");
-        GUILayout.Label("Press 1: Highlight Player 1 movement");
-        GUILayout.Label("Press 2: Highlight Player 2 movement");
-        GUILayout.Label("Press C: Clear highlights");
-        GUILayout.Label("Press R: Reset turn points");
-        GUILayout.Label("Press N: Advance turn");
-        GUILayout.Label("Press Space: Log positions");
-        GUILayout.Space(10f);
-
-        GUILayout.Label("Gladiator Info:");
-        for (int i = 0; i < spawnedGladiators.Count; i++)
-        {
-            Gladiator g = spawnedGladiators[i];
-            if (g == null)
-            {
-                continue;
-            }
-
-            string name = g.Data != null ? g.Data.gladiatorName : g.name;
-            Vector2Int pos = g.CurrentGridPosition;
-            int hp = g.CurrentHP;
-            int mp = g.RemainingMP;
-            int ap = g.RemainingAP;
-
-            GUILayout.Label($"[{i}] {name}  Pos: ({pos.x},{pos.y})  HP: {hp}  MP/AP: {mp}/{ap}");
-        }
-
-        GUILayout.EndArea();
-    }
+    // OnGUI debug UI removed (replaced by UI panels).
 }
 

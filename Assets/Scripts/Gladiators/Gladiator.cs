@@ -151,7 +151,7 @@ public class Gladiator : MonoBehaviour
     /// <param name="gladiatorData">The data asset describing this gladiator.</param>
     /// <param name="startPos">The starting grid position.</param>
     /// <param name="playerControlled">Whether this gladiator is player controlled.</param>
-    public void Initialize(GladiatorData gladiatorData, Vector2Int startPos, bool playerControlled)
+    public void Initialize(GladiatorData gladiatorData, Vector2Int startPos, bool playerControlled, bool placeOnGrid = true)
     {
         data = gladiatorData;
         isPlayerControlled = playerControlled;
@@ -172,7 +172,15 @@ public class Gladiator : MonoBehaviour
         }
 
         SetupVisuals();
-        PlaceOnGrid(startPos);
+        if (placeOnGrid)
+        {
+            PlaceOnGrid(startPos);
+        }
+        else
+        {
+            currentGridPosition = startPos;
+            transform.position = new Vector3(0f, 0.5f, -100f);
+        }
 
         CreateHealthBar();
     }

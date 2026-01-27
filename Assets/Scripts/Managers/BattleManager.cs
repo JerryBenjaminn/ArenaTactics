@@ -11,6 +11,7 @@ public class BattleManager : MonoBehaviour
     public enum BattleState
     {
         Setup,
+        Deployment,
         PlayerTurn,
         EnemyTurn,
         Victory,
@@ -58,6 +59,13 @@ public class BattleManager : MonoBehaviour
     [SerializeField]
     private InitiativeQueue initiativeQueue;
 
+    [Header("Deployment")]
+    [SerializeField]
+    private DeploymentManager deploymentManager;
+
+    [SerializeField]
+    private DeploymentUI deploymentUI;
+
     /// <summary>
     /// Gets all gladiators participating in the battle.
     /// </summary>
@@ -77,6 +85,14 @@ public class BattleManager : MonoBehaviour
     /// Gets the current battle state.
     /// </summary>
     public BattleState CurrentBattleState => battleState;
+
+    /// <summary>
+    /// Returns the current battle state.
+    /// </summary>
+    public BattleState GetBattleState()
+    {
+        return battleState;
+    }
 
     /// <summary>
     /// Gets the current turn phase.
@@ -116,11 +132,12 @@ public class BattleManager : MonoBehaviour
             ? new List<Gladiator>()
             : gladiators.Where(g => g != null).ToList();
 
-        CalculateInitiative();
-        battleState = BattleState.Setup;
+        SetBattleState(BattleState.Setup);
         turnPhase = TurnPhase.WaitingForInput;
         currentTurnIndex = 0;
         currentGladiator = null;
+
+        StartDeploymentPhase();
     }
 
     /// <summary>
@@ -152,6 +169,8 @@ public class BattleManager : MonoBehaviour
     /// </summary>
     public void StartBattle()
     {
+        CalculateInitiative();
+
         if (turnOrder == null || turnOrder.Count == 0)
         {
             Debug.LogWarning("BattleManager.StartBattle - No gladiators available to start battle.");
@@ -160,7 +179,7 @@ public class BattleManager : MonoBehaviour
 
         currentTurnIndex = Mathf.Clamp(currentTurnIndex, 0, turnOrder.Count - 1);
         Gladiator first = turnOrder[currentTurnIndex];
-        battleState = GetStateForGladiator(first);
+        SetBattleState(GetStateForGladiator(first));
 
         if (initiativeQueue != null)
         {
@@ -168,6 +187,27 @@ public class BattleManager : MonoBehaviour
         }
 
         StartTurn();
+    }
+
+    public void CompleteDeployment()
+    {
+        if (deploymentManager != null)
+        {
+            if (!deploymentManager.AllGladiatorsDeployed())
+            {
+                Debug.LogWarning("Not all gladiators are deployed!");
+                return;
+            }
+
+            deploymentManager.CompleteDeployment();
+        }
+
+        if (deploymentUI != null)
+        {
+            deploymentUI.Hide();
+        }
+
+        StartBattle();
     }
 
     /// <summary>
@@ -191,7 +231,7 @@ public class BattleManager : MonoBehaviour
 
         currentGladiator.ResetTurnPoints();
         turnPhase = TurnPhase.WaitingForInput;
-        battleState = GetStateForGladiator(currentGladiator);
+        SetBattleState(GetStateForGladiator(currentGladiator));
 
         string name = currentGladiator.Data != null ? currentGladiator.Data.gladiatorName : currentGladiator.name;
         int speed = currentGladiator.Data != null ? currentGladiator.Data.speed : 0;
@@ -299,12 +339,12 @@ public class BattleManager : MonoBehaviour
 
         if (livingPlayers == 0 && livingEnemies > 0)
         {
-            battleState = BattleState.Defeat;
+            SetBattleState(BattleState.Defeat);
             Debug.Log("BattleManager: Defeat! All player gladiators are down.");
         }
         else if (livingEnemies == 0 && livingPlayers > 0)
         {
-            battleState = BattleState.Victory;
+            SetBattleState(BattleState.Victory);
             Debug.Log("BattleManager: Victory! All enemy gladiators are down.");
         }
     }
@@ -354,6 +394,129 @@ public class BattleManager : MonoBehaviour
         StartCoroutine(AIController.ExecuteAITurn(currentGladiator));
     }
 
+    private void Update()
+    {
+        if (battleState == BattleState.Deployment)
+        {
+            if (Time.frameCount % 60 == 0)
+            {
+                Debug.Log($"Update - In Deployment state (frame {Time.frameCount})");
+            }
+
+            HandleDeploymentInput();
+        }
+    }
+
+    private void StartDeploymentPhase()
+    {
+        SetBattleState(BattleState.Deployment);
+
+        if (deploymentManager != null)
+        {
+            deploymentManager.StartDeployment(allGladiators);
+        }
+
+        if (deploymentUI != null)
+        {
+            deploymentUI.Show();
+        }
+
+        if (DebugSettings.LOG_SYSTEM)
+        {
+            Debug.Log("Entered deployment phase. Position your gladiators and click Ready.");
+        }
+    }
+
+    private void SetBattleState(BattleState newState)
+    {
+        if (battleState == newState)
+        {
+            return;
+        }
+
+        if (DebugSettings.LOG_SYSTEM)
+        {
+            Debug.Log($"BattleManager: BattleState {battleState} -> {newState}");
+        }
+
+        battleState = newState;
+    }
+
+    private void HandleDeploymentInput()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            Debug.Log("=== DEPLOYMENT CLICK DETECTED ===");
+
+            Camera cam = Camera.main;
+            if (cam == null)
+            {
+                Debug.LogError("HandleDeploymentInput - Camera.main is NULL!");
+                return;
+            }
+
+            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+            Debug.Log($"HandleDeploymentInput - Raycast from mouse pos: {Input.mousePosition}");
+
+            RaycastHit[] hits = Physics.RaycastAll(ray, 100f);
+            Debug.Log($"HandleDeploymentInput - RaycastAll found {hits.Length} hits");
+
+            foreach (RaycastHit hit in hits)
+            {
+                Debug.Log($"  Hit: {hit.collider.name} (layer: {hit.collider.gameObject.layer})");
+            }
+
+            if (Physics.Raycast(ray, out RaycastHit hitInfo, 100f))
+            {
+                Debug.Log($"HandleDeploymentInput - Main hit: {hitInfo.collider.name}");
+
+                GridCell cell = hitInfo.collider.GetComponent<GridCell>();
+                if (cell == null)
+                {
+                    cell = hitInfo.collider.GetComponentInParent<GridCell>();
+                }
+
+                if (cell != null)
+                {
+                    Debug.Log($"HandleDeploymentInput - Found GridCell at {cell.GridPosition}");
+
+                    if (deploymentManager != null)
+                    {
+                        Debug.Log("HandleDeploymentInput - Calling deploymentManager.HandleDeploymentClick");
+                        deploymentManager.HandleDeploymentClick(cell.GridPosition);
+                    }
+                    else
+                    {
+                        Debug.LogError("HandleDeploymentInput - deploymentManager is NULL!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"HandleDeploymentInput - No GridCell found on {hitInfo.collider.name}");
+
+                    Gladiator glad = hitInfo.collider.GetComponent<Gladiator>();
+                    if (glad == null)
+                    {
+                        glad = hitInfo.collider.GetComponentInParent<Gladiator>();
+                    }
+
+                    if (glad != null)
+                    {
+                        Debug.Log($"HandleDeploymentInput - Hit gladiator {glad.name} at grid pos {glad.CurrentGridPosition}");
+                        if (deploymentManager != null)
+                        {
+                            deploymentManager.HandleDeploymentClick(glad.CurrentGridPosition);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning("HandleDeploymentInput - Physics.Raycast hit NOTHING");
+            }
+        }
+    }
+
     private BattleState GetStateForGladiator(Gladiator gladiator)
     {
         if (gladiator != null && gladiator.Data != null && gladiator.Data.team == Team.Enemy)
@@ -375,34 +538,5 @@ public class BattleManager : MonoBehaviour
         return controllerObject.AddComponent<PlayerInputController>();
     }
 
-    private void OnGUI()
-    {
-        GUILayout.BeginArea(new Rect(360f, 10f, 340f, 400f), GUI.skin.box);
-        GUILayout.Label("Battle Manager");
-        GUILayout.Label($"Battle State: {battleState}");
-        GUILayout.Label($"Turn Phase: {turnPhase}");
-
-        string currentName = currentGladiator != null && currentGladiator.Data != null
-            ? currentGladiator.Data.gladiatorName
-            : "None";
-        int currentSpeed = currentGladiator != null && currentGladiator.Data != null
-            ? currentGladiator.Data.speed
-            : 0;
-        GUILayout.Label($"Turn: {currentName} (Speed: {currentSpeed})");
-
-        GUILayout.Space(10f);
-        GUILayout.Label("Turn Order:");
-        for (int i = 0; i < turnOrder.Count; i++)
-        {
-            Gladiator gladiator = turnOrder[i];
-            if (gladiator == null || gladiator.Data == null)
-            {
-                continue;
-            }
-
-            GUILayout.Label($"[{i}] {gladiator.Data.gladiatorName} (Speed: {gladiator.Data.speed})");
-        }
-
-        GUILayout.EndArea();
-    }
+    // OnGUI debug UI removed (replaced by CurrentTurnPanel + InitiativeQueue).
 }
