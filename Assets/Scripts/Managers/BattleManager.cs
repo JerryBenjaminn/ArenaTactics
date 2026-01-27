@@ -230,6 +230,11 @@ public class BattleManager : MonoBehaviour
     /// </summary>
     public void EndTurn()
     {
+        if (PlayerInputController.Instance != null)
+        {
+            PlayerInputController.Instance.CloseInfoWindow();
+        }
+
         if (currentGladiator != null)
         {
             currentGladiator.ClearHighlights();

@@ -21,6 +21,10 @@ public class PlayerInputController : MonoBehaviour
     [SerializeField]
     private LayerMask gridLayer;
 
+    [Header("UI")]
+    [SerializeField]
+    private GladiatorInfoWindow infoWindow;
+
     [Header("Runtime")]
     [SerializeField]
     private Gladiator selectedGladiator;
@@ -117,6 +121,11 @@ public class PlayerInputController : MonoBehaviour
         {
             HandleMouseClick();
         }
+
+        if (Input.GetMouseButtonDown(1))
+        {
+            HandleRightClick();
+        }
     }
 
     /// <summary>
@@ -186,6 +195,46 @@ public class PlayerInputController : MonoBehaviour
             {
                 AttemptMove(cell);
             }
+        }
+    }
+
+    private void HandleRightClick()
+    {
+        if (mainCamera == null)
+        {
+            mainCamera = Camera.main;
+        }
+
+        if (mainCamera == null)
+        {
+            return;
+        }
+
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hitInfo, 100f))
+        {
+            Gladiator hitGladiator = hitInfo.collider.GetComponentInParent<Gladiator>();
+            if (hitGladiator != null)
+            {
+                if (infoWindow != null)
+                {
+                    if (infoWindow.IsShowing() && infoWindow.GetCurrentGladiator() == hitGladiator)
+                    {
+                        infoWindow.Hide();
+                    }
+                    else
+                    {
+                        infoWindow.Show(hitGladiator);
+                    }
+                }
+
+                return;
+            }
+        }
+
+        if (infoWindow != null && infoWindow.IsShowing())
+        {
+            infoWindow.Hide();
         }
     }
 
@@ -413,6 +462,14 @@ public class PlayerInputController : MonoBehaviour
         if (gladiator != null)
         {
             gladiator.OnTurnEnd();
+        }
+    }
+
+    public void CloseInfoWindow()
+    {
+        if (infoWindow != null && infoWindow.IsShowing())
+        {
+            infoWindow.Hide();
         }
     }
 
