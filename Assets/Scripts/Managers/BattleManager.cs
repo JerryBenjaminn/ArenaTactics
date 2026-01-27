@@ -66,6 +66,11 @@ public class BattleManager : MonoBehaviour
     [SerializeField]
     private DeploymentUI deploymentUI;
 
+    private Vector3 lastMouseWorldPos;
+    private bool wasMouseDown;
+    private Vector3 dragStartMousePos;
+    private const float MinDragDistance = 0.1f;
+
     /// <summary>
     /// Gets all gladiators participating in the battle.
     /// </summary>
@@ -444,75 +449,150 @@ public class BattleManager : MonoBehaviour
 
     private void HandleDeploymentInput()
     {
+        if (deploymentManager == null)
+        {
+            return;
+        }
+
+        Camera cam = Camera.main;
+        if (cam == null)
+        {
+            return;
+        }
+
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+
+        Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+        float distance;
+        Vector3 worldPos = Vector3.zero;
+
+        if (groundPlane.Raycast(ray, out distance))
+        {
+            worldPos = ray.GetPoint(distance);
+            lastMouseWorldPos = worldPos;
+        }
+
         if (Input.GetMouseButtonDown(0))
         {
-            Debug.Log("=== DEPLOYMENT CLICK DETECTED ===");
-
-            Camera cam = Camera.main;
-            if (cam == null)
-            {
-                Debug.LogError("HandleDeploymentInput - Camera.main is NULL!");
-                return;
-            }
-
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-            Debug.Log($"HandleDeploymentInput - Raycast from mouse pos: {Input.mousePosition}");
-
-            RaycastHit[] hits = Physics.RaycastAll(ray, 100f);
-            Debug.Log($"HandleDeploymentInput - RaycastAll found {hits.Length} hits");
-
-            foreach (RaycastHit hit in hits)
-            {
-                Debug.Log($"  Hit: {hit.collider.name} (layer: {hit.collider.gameObject.layer})");
-            }
+            wasMouseDown = true;
+            dragStartMousePos = Input.mousePosition;
 
             if (Physics.Raycast(ray, out RaycastHit hitInfo, 100f))
             {
-                Debug.Log($"HandleDeploymentInput - Main hit: {hitInfo.collider.name}");
-
-                GridCell cell = hitInfo.collider.GetComponent<GridCell>();
-                if (cell == null)
+                Gladiator glad = hitInfo.collider.GetComponentInParent<Gladiator>();
+                if (glad != null && glad.IsPlayerControlled)
                 {
-                    cell = hitInfo.collider.GetComponentInParent<GridCell>();
+                    deploymentManager.StartDrag(glad.CurrentGridPosition);
+                    return;
                 }
 
-                if (cell != null)
+                GridCell cell = hitInfo.collider.GetComponentInParent<GridCell>();
+                if (cell != null && cell.IsOccupied)
                 {
-                    Debug.Log($"HandleDeploymentInput - Found GridCell at {cell.GridPosition}");
-
-                    if (deploymentManager != null)
+                    glad = cell.OccupyingUnit != null
+                        ? cell.OccupyingUnit.GetComponent<Gladiator>()
+                        : null;
+                    if (glad != null && glad.IsPlayerControlled)
                     {
-                        Debug.Log("HandleDeploymentInput - Calling deploymentManager.HandleDeploymentClick");
-                        deploymentManager.HandleDeploymentClick(cell.GridPosition);
-                    }
-                    else
-                    {
-                        Debug.LogError("HandleDeploymentInput - deploymentManager is NULL!");
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning($"HandleDeploymentInput - No GridCell found on {hitInfo.collider.name}");
-
-                    Gladiator glad = hitInfo.collider.GetComponent<Gladiator>();
-                    if (glad == null)
-                    {
-                        glad = hitInfo.collider.GetComponentInParent<Gladiator>();
-                    }
-
-                    if (glad != null)
-                    {
-                        Debug.Log($"HandleDeploymentInput - Hit gladiator {glad.name} at grid pos {glad.CurrentGridPosition}");
-                        if (deploymentManager != null)
-                        {
-                            deploymentManager.HandleDeploymentClick(glad.CurrentGridPosition);
-                        }
+                        deploymentManager.StartDrag(cell.GridPosition);
+                        return;
                     }
                 }
             }
+        }
+
+        if (Input.GetMouseButton(0) && wasMouseDown)
+        {
+            if (deploymentManager.IsDragging())
+            {
+                deploymentManager.UpdateDrag(lastMouseWorldPos);
+            }
+        }
+
+        if (Input.GetMouseButtonUp(0))
+        {
+            wasMouseDown = false;
+
+            if (deploymentManager.IsDragging())
+            {
+                Debug.Log("=== ENDING DRAG ===");
+
+                Ray releaseRay = cam.ScreenPointToRay(Input.mousePosition);
+                Debug.Log($"EndDrag - Mouse position: {Input.mousePosition}");
+
+                float dragDistance = Vector3.Distance(Input.mousePosition, dragStartMousePos);
+                Debug.Log($"Mouse released, drag distance: {dragDistance}");
+
+                if (dragDistance <= MinDragDistance)
+                {
+                    Debug.Log("Drag distance too small, treating as click");
+                    deploymentManager.CancelDrag();
+
+                    if (Physics.Raycast(releaseRay, out RaycastHit clickHit, 100f))
+                    {
+                        GridCell clickCell = clickHit.collider.GetComponentInParent<GridCell>();
+                        if (clickCell != null)
+                        {
+                            deploymentManager.HandleDeploymentClick(clickCell.GridPosition);
+                        }
+                    }
+                    return;
+                }
+
+                if (Physics.Raycast(releaseRay, out RaycastHit hitInfo, 100f))
+                {
+                    Debug.Log($"EndDrag - Hit: {hitInfo.collider.name}");
+
+                    GridCell cell = hitInfo.collider.GetComponent<GridCell>();
+                    if (cell == null)
+                    {
+                        cell = hitInfo.collider.GetComponentInParent<GridCell>();
+                    }
+
+                    if (cell != null)
+                    {
+                        Debug.Log($"EndDrag - Found GridCell at {cell.GridPosition}");
+                        deploymentManager.EndDrag(cell.GridPosition);
+                        return;
+                    }
+
+                    Debug.LogWarning($"EndDrag - No GridCell on {hitInfo.collider.name}");
+                }
+
+                if (groundPlane.Raycast(releaseRay, out distance))
+                {
+                    worldPos = releaseRay.GetPoint(distance);
+                    Debug.Log($"EndDrag - World position: {worldPos}");
+
+                    if (GridManager.Instance != null)
+                    {
+                        Vector2Int gridPos = GridManager.Instance.WorldToGridPosition(worldPos);
+                        Debug.Log($"EndDrag - Converted to grid position: {gridPos}");
+
+                        if (GridManager.Instance.IsPositionValid(gridPos))
+                        {
+                            Debug.Log("EndDrag - Using converted grid position");
+                            deploymentManager.EndDrag(gridPos);
+                            return;
+                        }
+
+                        Debug.LogWarning($"EndDrag - Converted position {gridPos} is invalid");
+                    }
+                }
+
+                Debug.LogWarning("EndDrag - No valid position found, cancelling");
+                deploymentManager.CancelDrag();
+            }
             else
             {
-                Debug.LogWarning("HandleDeploymentInput - Physics.Raycast hit NOTHING");
+                if (Physics.Raycast(ray, out RaycastHit hit, 100f))
+                {
+                    GridCell cell = hit.collider.GetComponentInParent<GridCell>();
+                    if (cell != null)
+                    {
+                        deploymentManager.HandleDeploymentClick(cell.GridPosition);
+                    }
+                }
             }
         }
     }
