@@ -41,6 +41,8 @@ public class PlayerInputController : MonoBehaviour
     private int lastMoveCost;
     private Coroutine autoEndRoutine;
     private readonly Dictionary<Gladiator, Material> highlightedTargets = new Dictionary<Gladiator, Material>();
+    private Vector3 rightClickStartPos;
+    private const float MinRightClickDrag = 5f;
 
     /// <summary>
     /// Gets the currently selected gladiator.
@@ -134,6 +136,23 @@ public class PlayerInputController : MonoBehaviour
 
         if (Input.GetMouseButtonDown(1))
         {
+            rightClickStartPos = Input.mousePosition;
+        }
+
+        if (Input.GetMouseButtonUp(1))
+        {
+            float dragDistance = Vector3.Distance(Input.mousePosition, rightClickStartPos);
+            if (dragDistance >= MinRightClickDrag)
+            {
+                return;
+            }
+
+            CameraController cameraController = FindAnyObjectByType<CameraController>();
+            if (cameraController != null && cameraController.IsRotating())
+            {
+                return;
+            }
+
             HandleRightClick();
         }
     }

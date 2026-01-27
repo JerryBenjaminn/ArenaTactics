@@ -2519,6 +2519,7 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
+  - component: {fileID: 330585548}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -2644,6 +2645,34 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &330585548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea78a47b1932ffd49aed7cdda9903323, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraController
+  cameraTransform: {fileID: 0}
+  mainCamera: {fileID: 0}
+  focusPoint: {x: 0, y: 0, z: -3}
+  startHeight: 12
+  startDistance: 10
+  zoomSpeed: 2
+  minZoom: 5
+  maxZoom: 20
+  panSpeed: 10
+  panBoundsMin: {x: -5, y: -5}
+  panBoundsMax: {x: 5, y: 5}
+  rotationSpeed: 100
+  allowRotation: 1
+  currentRotationY: 45
+  cameraAngle: 45
+  lockAngle: 1
 --- !u!1 &334872537
 GameObject:
   m_ObjectHideFlags: 0
@@ -10931,6 +10960,8 @@ MonoBehaviour:
   enemyDeploymentEndRow: 9
   deploymentZoneColor: {r: 0.3, g: 1, b: 0.3, a: 0.5}
   invalidZoneColor: {r: 1, g: 0.3, b: 0.3, a: 0.3}
+  dragHeight: 1
+  dragFollowSpeed: 15
 --- !u!4 &1178841376
 Transform:
   m_ObjectHideFlags: 0
