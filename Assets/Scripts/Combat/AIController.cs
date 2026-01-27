@@ -1,0 +1,221 @@
+using System.Collections;
+using System.Collections.Generic;
+using ArenaTactics.Data;
+using UnityEngine;
+
+/// <summary>
+/// Simple utility class for AI decision making.
+/// </summary>
+public static class AIController
+{
+    /// <summary>
+    /// Executes the full AI turn for the provided gladiator.
+    /// </summary>
+    public static IEnumerator ExecuteAITurn(Gladiator aiGladiator)
+    {
+        if (aiGladiator == null)
+        {
+            yield break;
+        }
+
+        yield return new WaitForSeconds(0.5f);
+
+        List<Gladiator> attackableTargets = aiGladiator.GetAttackableTargets();
+        if (attackableTargets.Count > 0 && aiGladiator.RemainingAP > 0)
+        {
+            Gladiator target = SelectAttackTarget(attackableTargets, aiGladiator);
+            if (target != null)
+            {
+                yield return AttackTarget(aiGladiator, target);
+                EndAITurn();
+                yield break;
+            }
+        }
+
+        Gladiator nearestEnemy = FindNearestEnemy(aiGladiator);
+        if (nearestEnemy != null)
+        {
+            yield return MoveTowardsTarget(aiGladiator, nearestEnemy);
+        }
+
+        attackableTargets = aiGladiator.GetAttackableTargets();
+        if (attackableTargets.Count > 0 && aiGladiator.RemainingAP > 0)
+        {
+            Gladiator target = SelectAttackTarget(attackableTargets, aiGladiator);
+            if (target != null)
+            {
+                yield return AttackTarget(aiGladiator, target);
+            }
+        }
+
+        yield return new WaitForSeconds(0.3f);
+        EndAITurn();
+    }
+
+    private static void EndAITurn()
+    {
+        if (BattleManager.Instance != null)
+        {
+            BattleManager.Instance.EndTurn();
+        }
+    }
+
+    private static Gladiator SelectAttackTarget(List<Gladiator> targets, Gladiator attacker)
+    {
+        Gladiator best = null;
+        int lowestHp = int.MaxValue;
+        int bestDistance = int.MaxValue;
+
+        foreach (Gladiator target in targets)
+        {
+            if (target == null || target.CurrentHP <= 0)
+            {
+                continue;
+            }
+
+            int hp = target.CurrentHP;
+            int distance = GetGridDistance(attacker.CurrentGridPosition, target.CurrentGridPosition);
+
+            if (hp < lowestHp || (hp == lowestHp && distance < bestDistance))
+            {
+                lowestHp = hp;
+                bestDistance = distance;
+                best = target;
+            }
+        }
+
+        return best;
+    }
+
+    private static Gladiator FindNearestEnemy(Gladiator aiGladiator)
+    {
+        if (BattleManager.Instance == null || aiGladiator == null || aiGladiator.Data == null)
+        {
+            return null;
+        }
+
+        Team myTeam = aiGladiator.Data.team;
+        Gladiator nearest = null;
+        int bestDistance = int.MaxValue;
+
+        foreach (Gladiator gladiator in BattleManager.Instance.AllGladiators)
+        {
+            if (gladiator == null || gladiator.CurrentHP <= 0 || gladiator.Data == null)
+            {
+                continue;
+            }
+
+            if (gladiator.Data.team == myTeam)
+            {
+                continue;
+            }
+
+            int distance = GetGridDistance(aiGladiator.CurrentGridPosition, gladiator.CurrentGridPosition);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                nearest = gladiator;
+            }
+        }
+
+        return nearest;
+    }
+
+    private static IEnumerator MoveTowardsTarget(Gladiator aiGladiator, Gladiator target)
+    {
+        if (aiGladiator == null || target == null)
+        {
+            yield break;
+        }
+
+        if (aiGladiator.RemainingMP <= 0)
+        {
+            yield break;
+        }
+
+        Vector2Int bestMove = FindBestMoveTowards(aiGladiator, target.CurrentGridPosition);
+        int cost = GetGridDistance(aiGladiator.CurrentGridPosition, bestMove);
+        if (cost <= 0)
+        {
+            yield break;
+        }
+
+        if (!aiGladiator.TrySpendMP(cost))
+        {
+            yield break;
+        }
+
+        Debug.Log($"AIController: {aiGladiator.name} moving towards {target.name}.");
+        aiGladiator.MoveToSmooth(bestMove);
+
+        while (aiGladiator.IsMoving)
+        {
+            yield return null;
+        }
+    }
+
+    private static IEnumerator AttackTarget(Gladiator attacker, Gladiator target)
+    {
+        if (attacker == null || target == null)
+        {
+            yield break;
+        }
+
+        if (attacker.RemainingAP <= 0)
+        {
+            yield break;
+        }
+
+        int damage = CombatSystem.CalculateDamage(attacker, target);
+        target.TakeDamage(damage);
+        attacker.TrySpendAP(1);
+
+        Debug.Log($"AIController: {attacker.name} attacked {target.name} for {damage} damage.");
+        yield return new WaitForSeconds(0.3f);
+    }
+
+    private static int GetGridDistance(Vector2Int a, Vector2Int b)
+    {
+        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+    }
+
+    private static Vector2Int FindBestMoveTowards(Gladiator mover, Vector2Int targetPos)
+    {
+        List<Vector2Int> moveRange = mover.GetMovementRange();
+        if (moveRange == null || moveRange.Count == 0)
+        {
+            return mover.CurrentGridPosition;
+        }
+
+        Vector2Int bestMove = mover.CurrentGridPosition;
+        int bestDistance = int.MaxValue;
+
+        foreach (Vector2Int pos in moveRange)
+        {
+            if (pos != mover.CurrentGridPosition)
+            {
+                GridCell cell = GridManager.Instance != null ? GridManager.Instance.GetCellAtPosition(pos) : null;
+                if (cell == null)
+                {
+                    Debug.LogWarning($"AIController: Cell at {pos} is null");
+                    continue;
+                }
+
+                if (cell.IsOccupied)
+                {
+                    Debug.Log($"AIController: Skipping occupied tile at {pos}");
+                    continue;
+                }
+            }
+
+            int distance = GetGridDistance(pos, targetPos);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestMove = pos;
+            }
+        }
+
+        return bestMove;
+    }
+}

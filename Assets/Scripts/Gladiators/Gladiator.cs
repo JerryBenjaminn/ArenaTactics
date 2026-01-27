@@ -1,6 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
 using ArenaTactics.Data;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// Runtime representation of a gladiator on the tactical grid.
@@ -18,6 +20,22 @@ public class Gladiator : MonoBehaviour
 
     [SerializeField]
     private int baseAttackRange = 1;
+
+    [Header("Movement")]
+    [SerializeField]
+    private bool isMoving;
+
+    [SerializeField]
+    private Vector3 moveStartPosition;
+
+    [SerializeField]
+    private Vector3 moveTargetPosition;
+
+    [SerializeField]
+    private float moveSpeed = 5f;
+
+    [SerializeField]
+    private float moveLerpProgress;
 
     [Header("Grid")]
     [SerializeField]
@@ -40,6 +58,9 @@ public class Gladiator : MonoBehaviour
     [Header("Visuals")]
     [SerializeField]
     private Material originalMaterial;
+
+    [Header("UI")]
+    private HealthBarUI healthBar;
 
     /// <summary>
     /// Current hit points for this gladiator instance.
@@ -76,6 +97,11 @@ public class Gladiator : MonoBehaviour
     public int CurrentHP => currentHP;
 
     /// <summary>
+    /// Gets the maximum hit points for this gladiator instance.
+    /// </summary>
+    public int MaxHP => data != null ? data.maxHP : 0;
+
+    /// <summary>
     /// Gets the remaining movement points for this turn.
     /// </summary>
     public int RemainingMP => remainingMP;
@@ -84,6 +110,11 @@ public class Gladiator : MonoBehaviour
     /// Gets the remaining action points for this turn.
     /// </summary>
     public int RemainingAP => remainingAP;
+
+    /// <summary>
+    /// Gets whether this gladiator is currently moving.
+    /// </summary>
+    public bool IsMoving => isMoving;
 
     /// <summary>
     /// Gets the maximum movement points for this gladiator.
@@ -134,6 +165,8 @@ public class Gladiator : MonoBehaviour
 
         SetupVisuals();
         PlaceOnGrid(startPos);
+
+        CreateHealthBar();
     }
 
     /// <summary>
@@ -198,17 +231,17 @@ public class Gladiator : MonoBehaviour
     /// <summary>
     /// Applies incoming damage, updating hit points and handling death.
     /// </summary>
-    /// <param name="damage">Amount of damage to apply before defense.</param>
+    /// <param name="damage">Final damage to apply (defense already accounted for).</param>
     public void TakeDamage(int damage)
     {
-        if (data == null)
+        if (damage <= 0)
         {
             return;
         }
 
-        int mitigatedDamage = Mathf.Max(0, damage - data.defense);
-        currentHP -= mitigatedDamage;
-        currentHP = Mathf.Clamp(currentHP, 0, data.maxHP);
+        currentHP -= damage;
+        currentHP = Mathf.Clamp(currentHP, 0, data != null ? data.maxHP : 0);
+        Debug.Log($"Gladiator.TakeDamage - {name} took {damage} damage. HP: {currentHP}/{MaxHP}", this);
 
         if (currentHP <= 0)
         {
@@ -221,7 +254,9 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public void Die()
     {
+        Debug.Log($"Gladiator {name} has died.", this);
         ClearHighlights();
+        DestroyHealthBar();
 
         if (gridManager != null && gridManager.IsPositionValid(currentGridPosition))
         {
@@ -233,6 +268,74 @@ public class Gladiator : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    /// <summary>
+    /// Assigns a prefab to be used for the health bar.
+    /// </summary>
+    public void SetHealthBarPrefab(GameObject prefab)
+    {
+        // Prefab-based health bars are no longer used.
+    }
+
+    /// <summary>
+    /// Creates the floating health bar UI for this gladiator.
+    /// </summary>
+    public void CreateHealthBar()
+    {
+        if (healthBar != null)
+        {
+            return;
+        }
+
+        GameObject hpBarRoot = new GameObject($"HealthBar_{name}");
+
+        Canvas canvas = hpBarRoot.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.WorldSpace;
+
+        CanvasScaler scaler = hpBarRoot.AddComponent<CanvasScaler>();
+        scaler.dynamicPixelsPerUnit = 10f;
+
+        RectTransform canvasRect = hpBarRoot.GetComponent<RectTransform>();
+        canvasRect.sizeDelta = new Vector2(100f, 20f);
+        canvasRect.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+
+        GameObject bgObject = new GameObject("Background");
+        bgObject.transform.SetParent(canvas.transform, false);
+        Image bgImage = bgObject.AddComponent<Image>();
+        bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+        RectTransform bgRect = bgObject.GetComponent<RectTransform>();
+        bgRect.anchorMin = Vector2.zero;
+        bgRect.anchorMax = Vector2.one;
+        bgRect.offsetMin = Vector2.zero;
+        bgRect.offsetMax = Vector2.zero;
+
+        GameObject fillObject = new GameObject("Fill");
+        fillObject.transform.SetParent(bgObject.transform, false);
+        Image fillImage = fillObject.AddComponent<Image>();
+        fillImage.color = data != null && data.team == Team.Player
+            ? new Color(0f, 1f, 0f, 1f)
+            : new Color(1f, 0f, 0f, 1f);
+        RectTransform fillRect = fillObject.GetComponent<RectTransform>();
+        fillRect.anchorMin = new Vector2(0f, 0f);
+        fillRect.anchorMax = new Vector2(0f, 1f);
+        fillRect.pivot = new Vector2(0f, 0.5f);
+        fillRect.sizeDelta = new Vector2(100f, 0f);
+        fillRect.anchoredPosition = Vector2.zero;
+
+        healthBar = hpBarRoot.AddComponent<HealthBarUI>();
+        healthBar.SetReferences(this, canvas, fillImage, bgImage);
+
+        Debug.Log($"Created procedural health bar for {name}", this);
+    }
+
+    private void DestroyHealthBar()
+    {
+        if (healthBar != null)
+        {
+            Destroy(healthBar.gameObject);
+            healthBar = null;
+        }
     }
 
     /// <summary>
@@ -292,6 +395,158 @@ public class Gladiator : MonoBehaviour
     }
 
     /// <summary>
+    /// Smoothly moves the gladiator to the target grid position.
+    /// </summary>
+    public void MoveToSmooth(Vector2Int targetGridPos)
+    {
+        if (isMoving)
+        {
+            return;
+        }
+
+        if (gridManager == null)
+        {
+            gridManager = GridManager.Instance;
+        }
+
+        if (gridManager == null || !gridManager.IsPositionValid(targetGridPos))
+        {
+            return;
+        }
+
+        GridCell targetCell = gridManager.GetCellAtPosition(targetGridPos);
+        if (targetCell == null || !targetCell.IsWalkable || targetCell.IsOccupied)
+        {
+            return;
+        }
+
+        StartCoroutine(MoveAlongPath(BuildPathToTarget(currentGridPosition, targetGridPos)));
+    }
+
+    private List<Vector2Int> BuildPathToTarget(Vector2Int start, Vector2Int end)
+    {
+        var path = new List<Vector2Int>();
+        if (gridManager == null)
+        {
+            gridManager = GridManager.Instance;
+        }
+
+        if (gridManager == null)
+        {
+            return path;
+        }
+
+        var queue = new Queue<Vector2Int>();
+        var cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+        var visited = new HashSet<Vector2Int>();
+
+        queue.Enqueue(start);
+        visited.Add(start);
+
+        while (queue.Count > 0)
+        {
+            Vector2Int current = queue.Dequeue();
+            if (current == end)
+            {
+                break;
+            }
+
+            foreach (GridCell neighbor in gridManager.GetWalkableNeighbors(current))
+            {
+                Vector2Int next = neighbor.GridPosition;
+                if (visited.Contains(next))
+                {
+                    continue;
+                }
+
+                visited.Add(next);
+                cameFrom[next] = current;
+                queue.Enqueue(next);
+            }
+        }
+
+        if (!cameFrom.ContainsKey(end))
+        {
+            return path;
+        }
+
+        Vector2Int step = end;
+        while (step != start)
+        {
+            path.Add(step);
+            step = cameFrom[step];
+        }
+
+        path.Reverse();
+        return path;
+    }
+
+    private IEnumerator MoveAlongPath(List<Vector2Int> path)
+    {
+        isMoving = true;
+        Vector2Int startPos = currentGridPosition;
+
+        GridCell oldCell = gridManager != null ? gridManager.GetCellAtPosition(currentGridPosition) : null;
+        if (oldCell != null && oldCell.OccupyingUnit == gameObject)
+        {
+            oldCell.ClearOccupied();
+            Debug.Log($"{name} moving from {startPos}. Old cell occupied: {oldCell.IsOccupied}", this);
+        }
+
+        if (path.Count == 0)
+        {
+            if (oldCell != null)
+            {
+                oldCell.SetOccupied(gameObject);
+            }
+
+            isMoving = false;
+            moveLerpProgress = 1f;
+            yield break;
+        }
+
+        foreach (Vector2Int step in path)
+        {
+            GridCell stepCell = gridManager != null ? gridManager.GetCellAtPosition(step) : null;
+            if (stepCell == null || stepCell.IsOccupied)
+            {
+                break;
+            }
+
+            moveStartPosition = transform.position;
+            moveTargetPosition = stepCell.WorldPosition;
+            moveTargetPosition.y = 0.5f;
+
+            float distance = Vector3.Distance(moveStartPosition, moveTargetPosition);
+            float duration = distance / Mathf.Max(0.01f, moveSpeed);
+            duration = Mathf.Max(0.3f, duration);
+
+            moveLerpProgress = 0f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                moveLerpProgress = Mathf.Clamp01(elapsed / duration);
+                transform.position = Vector3.Lerp(moveStartPosition, moveTargetPosition, moveLerpProgress);
+                yield return null;
+            }
+
+            transform.position = moveTargetPosition;
+            currentGridPosition = step;
+        }
+
+        GridCell finalCell = gridManager != null ? gridManager.GetCellAtPosition(currentGridPosition) : null;
+        if (finalCell != null)
+        {
+            finalCell.SetOccupied(gameObject);
+            Debug.Log($"{name} moved to {currentGridPosition}. New cell occupied: {finalCell.IsOccupied}", this);
+        }
+
+        isMoving = false;
+        moveLerpProgress = 1f;
+    }
+
+    /// <summary>
     /// Equips the provided weapon on this gladiator.
     /// </summary>
     public void EquipWeapon(WeaponData weapon)
@@ -340,6 +595,15 @@ public class Gladiator : MonoBehaviour
     {
         var targets = new List<Gladiator>();
 
+        int range = GetAttackRange();
+        Debug.Log($"Gladiator.GetAttackableTargets - {name}, Range: {range}, Team: {data?.team}, Pos: {currentGridPosition}", this);
+
+        if (data == null)
+        {
+            Debug.LogWarning("Gladiator.GetAttackableTargets - Gladiator data is null.", this);
+            return targets;
+        }
+
         if (gridManager == null)
         {
             gridManager = GridManager.Instance;
@@ -350,9 +614,6 @@ public class Gladiator : MonoBehaviour
             Debug.LogWarning("Gladiator.GetAttackableTargets - GridManager reference is null.", this);
             return targets;
         }
-
-        int range = GetAttackRange();
-        Debug.Log($"Gladiator.GetAttackableTargets - Checking targets within range {range} from {currentGridPosition}.", this);
 
         var visited = new HashSet<Vector2Int>();
         var queue = new Queue<(Vector2Int pos, int cost)>();
@@ -378,15 +639,24 @@ public class Gladiator : MonoBehaviour
                 if (cell != null && cell.IsOccupied && cell.OccupyingUnit != null)
                 {
                     Gladiator target = cell.OccupyingUnit.GetComponent<Gladiator>();
-                    if (target != null && target != this && target.Data != null && data != null &&
-                        target.Data.team != data.team)
+                    if (target != null)
                     {
-                        bool hasLineOfSight = equippedWeapon == null || !equippedWeapon.requiresLineOfSight ||
-                                              CombatSystem.HasLineOfSight(currentGridPosition, pos, gridManager);
-
-                        if (hasLineOfSight && !targets.Contains(target))
+                        Debug.Log($"  Found gladiator: {target.name}, Team: {target.Data?.team}", this);
+                        if (target != this && target.Data != null)
                         {
-                            targets.Add(target);
+                            bool isEnemy = target.Data.team != data.team;
+                            Debug.Log($"    Is enemy? {isEnemy}", this);
+
+                            if (isEnemy)
+                            {
+                                bool hasLineOfSight = equippedWeapon == null || !equippedWeapon.requiresLineOfSight ||
+                                                      CombatSystem.HasLineOfSight(currentGridPosition, pos, gridManager);
+
+                                if (hasLineOfSight && !targets.Contains(target))
+                                {
+                                    targets.Add(target);
+                                }
+                            }
                         }
                     }
                 }
@@ -410,7 +680,7 @@ public class Gladiator : MonoBehaviour
             }
         }
 
-        Debug.Log($"Gladiator.GetAttackableTargets - Found {targets.Count} target(s).", this);
+        Debug.Log($"Gladiator.GetAttackableTargets result: {targets.Count} targets found", this);
         return targets;
     }
 

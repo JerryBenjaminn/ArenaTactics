@@ -309,8 +309,13 @@ public class BattleManager : MonoBehaviour
 
     private void AITakeTurn()
     {
-        Debug.Log("BattleManager: AI turn stub - ending turn.");
-        EndTurn();
+        if (currentGladiator == null)
+        {
+            return;
+        }
+
+        Debug.Log($"BattleManager: AI taking turn for {currentGladiator.name}");
+        StartCoroutine(AIController.ExecuteAITurn(currentGladiator));
     }
 
     private BattleState GetStateForGladiator(Gladiator gladiator)

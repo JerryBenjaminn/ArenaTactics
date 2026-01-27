@@ -36,7 +36,7 @@ public class TurnUI : MonoBehaviour
         }
 
         GUILayout.Space(10f);
-        GUI.enabled = input.HasMovedThisTurn && !input.HasAttackedThisTurn;
+        GUI.enabled = input.CanUndoMove;
         if (GUILayout.Button("Undo Move"))
         {
             input.UndoMove();

@@ -140,6 +140,8 @@ public class BattleSetupTest : MonoBehaviour
         gladiator.Initialize(data, gridPos, isPlayer);
         spawnedGladiators.Add(gladiator);
 
+        gladiator.CreateHealthBar();
+
         Debug.Log($"BattleSetupTest: Spawned gladiator '{data.gladiatorName}' at {gridPos}.");
         return gladiator;
     }

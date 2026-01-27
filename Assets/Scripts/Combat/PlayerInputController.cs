@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -34,6 +35,7 @@ public class PlayerInputController : MonoBehaviour
     private bool hasAttackedThisTurn;
 
     private int lastMoveCost;
+    private Coroutine autoEndRoutine;
     private readonly Dictionary<Gladiator, Material> highlightedTargets = new Dictionary<Gladiator, Material>();
 
     /// <summary>
@@ -50,6 +52,15 @@ public class PlayerInputController : MonoBehaviour
     /// Gets whether the player has attacked this turn.
     /// </summary>
     public bool HasAttackedThisTurn => hasAttackedThisTurn;
+
+    /// <summary>
+    /// Gets whether undo is currently available.
+    /// </summary>
+    public bool CanUndoMove => selectedGladiator != null &&
+                               hasMovedThisTurn &&
+                               !hasAttackedThisTurn &&
+                               selectedGladiator.RemainingMP > 0 &&
+                               lastMoveCost > 0;
 
     private void Awake()
     {
@@ -85,6 +96,11 @@ public class PlayerInputController : MonoBehaviour
         }
 
         if (selectedGladiator == null)
+        {
+            return;
+        }
+
+        if (selectedGladiator.IsMoving)
         {
             return;
         }
@@ -129,6 +145,7 @@ public class PlayerInputController : MonoBehaviour
         hasMovedThisTurn = false;
         hasAttackedThisTurn = false;
         lastMoveCost = 0;
+        StopAutoEndRoutine();
     }
 
     private void HandleMouseClick()
@@ -218,16 +235,21 @@ public class PlayerInputController : MonoBehaviour
 
         lastPosition = currentPos;
         lastMoveCost = cost;
-        selectedGladiator.PlaceOnGrid(targetPos);
+        selectedGladiator.MoveToSmooth(targetPos);
         hasMovedThisTurn = true;
 
-        Debug.Log($"PlayerInputController: Moved to {targetPos}, {selectedGladiator.RemainingMP} MP remaining.");
-        ShowMovementAndAttackRange();
+        Debug.Log($"PlayerInputController: Moving to {targetPos}, {selectedGladiator.RemainingMP} MP remaining.");
+        StartCoroutine(WaitForMoveCompletion());
     }
 
     private void AttackGladiator(Gladiator target)
     {
         if (selectedGladiator == null || target == null)
+        {
+            return;
+        }
+
+        if (selectedGladiator.IsMoving)
         {
             return;
         }
@@ -266,11 +288,12 @@ public class PlayerInputController : MonoBehaviour
     /// </summary>
     public void UndoMove()
     {
-        if (selectedGladiator == null || !hasMovedThisTurn || hasAttackedThisTurn)
+        if (selectedGladiator == null || !CanUndoMove)
         {
             return;
         }
 
+        StopAutoEndRoutine();
         selectedGladiator.PlaceOnGrid(lastPosition);
         selectedGladiator.RestoreMP(lastMoveCost);
         hasMovedThisTurn = false;
@@ -353,5 +376,94 @@ public class PlayerInputController : MonoBehaviour
         {
             gladiator.OnTurnEnd();
         }
+    }
+
+    private IEnumerator WaitForMoveCompletion()
+    {
+        if (selectedGladiator == null)
+        {
+            yield break;
+        }
+
+        while (selectedGladiator.IsMoving)
+        {
+            yield return null;
+        }
+
+        ShowMovementAndAttackRange();
+        CheckAutoEndTurn();
+    }
+
+    private void CheckAutoEndTurn()
+    {
+        if (selectedGladiator == null)
+        {
+            return;
+        }
+
+        bool canMove = selectedGladiator.RemainingMP > 0 && HasValidMoves();
+        bool canAttack = selectedGladiator.RemainingAP > 0 && HasValidAttacks();
+
+        if (!canMove && !canAttack)
+        {
+            Debug.Log("PlayerInputController: No actions remaining, auto-ending turn.");
+            StartAutoEndRoutine();
+        }
+    }
+
+    private bool HasValidMoves()
+    {
+        if (selectedGladiator == null)
+        {
+            return false;
+        }
+
+        List<Vector2Int> movementRange = selectedGladiator.GetMovementRange();
+        if (movementRange == null)
+        {
+            return false;
+        }
+
+        foreach (Vector2Int pos in movementRange)
+        {
+            if (pos != selectedGladiator.CurrentGridPosition)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool HasValidAttacks()
+    {
+        if (selectedGladiator == null)
+        {
+            return false;
+        }
+
+        List<Gladiator> targets = selectedGladiator.GetAttackableTargets();
+        return targets != null && targets.Count > 0;
+    }
+
+    private void StartAutoEndRoutine()
+    {
+        StopAutoEndRoutine();
+        autoEndRoutine = StartCoroutine(AutoEndTurnAfterDelay(0.5f));
+    }
+
+    private void StopAutoEndRoutine()
+    {
+        if (autoEndRoutine != null)
+        {
+            StopCoroutine(autoEndRoutine);
+            autoEndRoutine = null;
+        }
+    }
+
+    private IEnumerator AutoEndTurnAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        EndTurn();
     }
 }
