@@ -242,26 +242,12 @@ public class Gladiator : MonoBehaviour
                 continue;
             }
 
-            GridCell cell = gridManager.GetCellAtPosition(pos);
-            if (cell == null)
-            {
-                Debug.LogWarning($"Gladiator.GetMovementRange - Cell at {pos} is null, skipping neighbors.", this);
-                continue;
-            }
-
-            foreach (GridCell neighbor in cell.GetNeighbors())
+            foreach (GridCell neighbor in gridManager.GetWalkableNeighbors(pos))
             {
                 Vector2Int neighborPos = neighbor.GridPosition;
 
                 if (visited.Contains(neighborPos))
                 {
-                    continue;
-                }
-
-                // Gladiator cannot move through non-walkable or occupied cells.
-                if (!neighbor.IsWalkable || neighbor.IsOccupied)
-                {
-                    Debug.Log($"Gladiator.GetMovementRange - Skipping neighbor {neighborPos}. Walkable: {neighbor.IsWalkable}, Occupied: {neighbor.IsOccupied}", this);
                     continue;
                 }
 
@@ -341,7 +327,7 @@ public class Gladiator : MonoBehaviour
                 continue;
             }
 
-            Renderer renderer = cell.GetComponent<Renderer>();
+            Renderer renderer = cell.GetComponentInChildren<Renderer>();
             if (renderer != null && originalMat != null)
             {
                 renderer.sharedMaterial = originalMat;

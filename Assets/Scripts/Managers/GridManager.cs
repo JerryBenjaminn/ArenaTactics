@@ -334,9 +334,17 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        // Apply scaling and spacing.
+        // Apply scaling and spacing. Account for mesh dimensions (Plane is 10x10).
         float scaledSize = Mathf.Max(0.01f, cellSize - cellSpacing);
-        tileObject.transform.localScale = new Vector3(scaledSize, scaledSize, 1f);
+        MeshFilter meshFilter = tileObject.GetComponentInChildren<MeshFilter>();
+        if (meshFilter != null && meshFilter.sharedMesh != null)
+        {
+            tileObject.transform.localScale = GetTileScale(meshFilter.sharedMesh, scaledSize);
+        }
+        else
+        {
+            tileObject.transform.localScale = new Vector3(scaledSize, scaledSize, 1f);
+        }
 
         GridCell cell = tileObject.GetComponent<GridCell>();
         if (cell == null)
@@ -363,6 +371,43 @@ public class GridManager : MonoBehaviour
         float originZ = -totalHeight * 0.5f + cellSize * 0.5f;
 
         return new Vector3(originX, 0f, originZ);
+    }
+
+    /// <summary>
+    /// Computes a local scale so the tile footprint matches the target size,
+    /// regardless of whether the mesh is a 1x1 quad or a 10x10 plane.
+    /// </summary>
+    private static Vector3 GetTileScale(Mesh mesh, float targetSize)
+    {
+        Vector3 size = mesh.bounds.size;
+
+        int normalAxis = 0;
+        float min = size.x;
+        if (size.y < min)
+        {
+            min = size.y;
+            normalAxis = 1;
+        }
+        if (size.z < min)
+        {
+            normalAxis = 2;
+        }
+
+        Vector3 scale = Vector3.one;
+        if (size.x > 0f)
+        {
+            scale.x = normalAxis == 0 ? 1f : targetSize / size.x;
+        }
+        if (size.y > 0f)
+        {
+            scale.y = normalAxis == 1 ? 1f : targetSize / size.y;
+        }
+        if (size.z > 0f)
+        {
+            scale.z = normalAxis == 2 ? 1f : targetSize / size.z;
+        }
+
+        return scale;
     }
 }
 
