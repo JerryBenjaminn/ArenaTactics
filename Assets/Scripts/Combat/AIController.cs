@@ -20,6 +20,7 @@ public static class AIController
 
         yield return new WaitForSeconds(0.5f);
 
+        bool hasSpellsAvailable = HasAnyCastableSpells(aiGladiator);
         if (TryCastBestSpell(aiGladiator))
         {
             yield return new WaitForSeconds(0.2f);
@@ -27,8 +28,24 @@ public static class AIController
             yield break;
         }
 
+        if (hasSpellsAvailable)
+        {
+            Gladiator nearestEnemyForSpells = FindNearestEnemy(aiGladiator);
+            if (nearestEnemyForSpells != null)
+            {
+                yield return MoveTowardsTarget(aiGladiator, nearestEnemyForSpells);
+            }
+
+            if (TryCastBestSpell(aiGladiator))
+            {
+                yield return new WaitForSeconds(0.2f);
+                EndAITurn();
+                yield break;
+            }
+        }
+
         List<Gladiator> attackableTargets = aiGladiator.GetAttackableTargets();
-        if (attackableTargets.Count > 0 && aiGladiator.RemainingAP > 0)
+        if (attackableTargets.Count > 0 && aiGladiator.RemainingAP > 0 && aiGladiator.CanBasicAttack())
         {
             Gladiator target = SelectAttackTarget(attackableTargets, aiGladiator);
             if (target != null)
@@ -46,7 +63,7 @@ public static class AIController
         }
 
         attackableTargets = aiGladiator.GetAttackableTargets();
-        if (attackableTargets.Count > 0 && aiGladiator.RemainingAP > 0)
+        if (attackableTargets.Count > 0 && aiGladiator.RemainingAP > 0 && aiGladiator.CanBasicAttack())
         {
             Gladiator target = SelectAttackTarget(attackableTargets, aiGladiator);
             if (target != null)
@@ -57,6 +74,29 @@ public static class AIController
 
         yield return new WaitForSeconds(0.3f);
         EndAITurn();
+    }
+
+    private static bool HasAnyCastableSpells(Gladiator caster)
+    {
+        if (caster == null || caster.KnownSpells == null)
+        {
+            return false;
+        }
+
+        foreach (SpellData spell in caster.KnownSpells)
+        {
+            if (spell == null)
+            {
+                continue;
+            }
+
+            if (caster.CanCastSpell(spell))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool TryCastBestSpell(Gladiator caster)
@@ -90,7 +130,7 @@ public static class AIController
                 continue;
             }
 
-            if (caster.RemainingAP < spell.apCost || caster.CurrentSpellSlots < spell.spellSlotCost)
+            if (!caster.CanCastSpell(spell))
             {
                 continue;
             }
@@ -143,7 +183,7 @@ public static class AIController
                 continue;
             }
 
-            if (caster.RemainingAP < spell.apCost || caster.CurrentSpellSlots < spell.spellSlotCost)
+            if (!caster.CanCastSpell(spell))
             {
                 continue;
             }

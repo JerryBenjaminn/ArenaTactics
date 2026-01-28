@@ -326,7 +326,14 @@ public class GladiatorInfoWindow : MonoBehaviour
             if (weapon != null)
             {
                 int range = currentGladiator.GetAttackRange();
-                weaponText.text = $"Weapon: {weapon.weaponName} ({weapon.weaponType}, +{weapon.baseDamage} Dmg, Range {range})";
+                if (weapon.weaponType == WeaponType.Magic)
+                {
+                    weaponText.text = $"Weapon: {weapon.weaponName} (Magic, 0 damage - spellcasting focus, +{weapon.spellPowerBonus:P0} spell power)";
+                }
+                else
+                {
+                    weaponText.text = $"Weapon: {weapon.weaponName} ({weapon.weaponType}, +{weapon.baseDamage} Dmg, Range {range})";
+                }
             }
             else
             {

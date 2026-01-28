@@ -21,6 +21,7 @@ MonoBehaviour:
   range: 6
   apCost: 2
   spellSlotCost: 1
+  cooldownTurns: 3
   requiresLineOfSight: 1
   aoeRadius: 0
   duration: 0

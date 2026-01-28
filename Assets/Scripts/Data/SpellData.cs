@@ -50,6 +50,7 @@ namespace ArenaTactics.Data
         public int range = 4;
         public int apCost = 1;
         public int spellSlotCost = 1;
+        public int cooldownTurns = 0;
         public bool requiresLineOfSight = true;
 
         [Header("AOE")]

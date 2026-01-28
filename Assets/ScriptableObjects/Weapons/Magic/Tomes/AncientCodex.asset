@@ -17,7 +17,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   weaponType: 2
   damageType: 1
-  baseDamage: 13
+  baseDamage: 0
   range: 6
   attackRange: 6
   requiresLineOfSight: 1
@@ -32,4 +32,4 @@ MonoBehaviour:
   accuracyBonus: 0
   critBonus: 0
   spellSlotBonus: 3
-  spellPowerBonus: 0.35
+  spellPowerBonus: 0.5

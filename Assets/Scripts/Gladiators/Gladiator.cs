@@ -78,6 +78,8 @@ public class Gladiator : MonoBehaviour
     [SerializeField]
     private int currentSpellSlots;
 
+    private readonly Dictionary<SpellData, int> spellCooldowns = new Dictionary<SpellData, int>();
+
     /// <summary>
     /// Current hit points for this gladiator instance.
     /// </summary>
@@ -222,6 +224,7 @@ public class Gladiator : MonoBehaviour
             }
 
             knownSpells.Clear();
+            spellCooldowns.Clear();
             if (data.startingSpells != null)
             {
                 knownSpells.AddRange(data.startingSpells);
@@ -302,6 +305,7 @@ public class Gladiator : MonoBehaviour
                       GetEffectModifier(EffectType.MovementDebuff);
         remainingMP = Mathf.Max(0, remainingMP);
         remainingAP = data.ActionPoints;
+        UpdateSpellCooldowns();
         RefreshSpellSlots();
         ProcessActiveEffects();
     }
@@ -730,6 +734,16 @@ public class Gladiator : MonoBehaviour
         return baseAttackRange;
     }
 
+    public bool CanBasicAttack()
+    {
+        if (equippedWeapon != null && equippedWeapon.weaponType == WeaponType.Magic)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     /// <summary>
     /// Returns whether this gladiator requires line of sight to attack.
     /// </summary>
@@ -1090,6 +1104,53 @@ public class Gladiator : MonoBehaviour
         currentSpellSlots = MaxSpellSlots;
     }
 
+    public void UpdateSpellCooldowns()
+    {
+        if (spellCooldowns.Count == 0)
+        {
+            return;
+        }
+
+        List<SpellData> keys = new List<SpellData>(spellCooldowns.Keys);
+        foreach (SpellData spell in keys)
+        {
+            int remaining = spellCooldowns[spell] - 1;
+            if (remaining <= 0)
+            {
+                spellCooldowns.Remove(spell);
+            }
+            else
+            {
+                spellCooldowns[spell] = remaining;
+            }
+        }
+    }
+
+    public int GetSpellCooldownRemaining(SpellData spell)
+    {
+        if (spell == null)
+        {
+            return 0;
+        }
+
+        return spellCooldowns.TryGetValue(spell, out int remaining) ? remaining : 0;
+    }
+
+    public bool CanCastSpell(SpellData spell)
+    {
+        if (spell == null)
+        {
+            return false;
+        }
+
+        if (remainingAP < spell.apCost || currentSpellSlots < spell.spellSlotCost)
+        {
+            return false;
+        }
+
+        return GetSpellCooldownRemaining(spell) <= 0;
+    }
+
     public bool TrySpendSpellSlots(int amount)
     {
         if (amount <= 0)
@@ -1200,6 +1261,11 @@ public class Gladiator : MonoBehaviour
             return false;
         }
 
+        if (!CanCastSpell(spell))
+        {
+            return false;
+        }
+
         int distance = Mathf.Abs(currentGridPosition.x - target.currentGridPosition.x) +
                        Mathf.Abs(currentGridPosition.y - target.currentGridPosition.y);
         inRange = distance <= spell.range;
@@ -1235,11 +1301,6 @@ public class Gladiator : MonoBehaviour
             return false;
         }
 
-        if (remainingAP < spell.apCost || currentSpellSlots < spell.spellSlotCost)
-        {
-            return false;
-        }
-
         bool inRange;
         bool hasLineOfSight;
         if (!CanCastSpell(spell, target, out inRange, out hasLineOfSight))
@@ -1262,6 +1323,10 @@ public class Gladiator : MonoBehaviour
 
         remainingAP = Mathf.Max(0, remainingAP - spell.apCost);
         TrySpendSpellSlots(spell.spellSlotCost);
+        if (spell.cooldownTurns > 0)
+        {
+            spellCooldowns[spell] = spell.cooldownTurns;
+        }
         return true;
     }
 
@@ -1272,7 +1337,7 @@ public class Gladiator : MonoBehaviour
             return false;
         }
 
-        if (remainingAP < spell.apCost || currentSpellSlots < spell.spellSlotCost)
+        if (!CanCastSpell(spell))
         {
             return false;
         }
@@ -1308,6 +1373,10 @@ public class Gladiator : MonoBehaviour
 
         remainingAP = Mathf.Max(0, remainingAP - spell.apCost);
         TrySpendSpellSlots(spell.spellSlotCost);
+        if (spell.cooldownTurns > 0)
+        {
+            spellCooldowns[spell] = spell.cooldownTurns;
+        }
         return true;
     }
 

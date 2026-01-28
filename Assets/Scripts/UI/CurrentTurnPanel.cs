@@ -191,13 +191,16 @@ public class CurrentTurnPanel : MonoBehaviour
             }
 
             SpellData spell = gladiator.KnownSpells[i];
+            int cooldownRemaining = gladiator.GetSpellCooldownRemaining(spell);
             if (entry.label != null)
             {
-                entry.label.text = $"{i + 1}. {spell.spellName} (AP {spell.apCost}, S {spell.spellSlotCost})";
+                string cooldownText = cooldownRemaining > 0 ? $" [CD: {cooldownRemaining}]" : string.Empty;
+                entry.label.text = $"{i + 1}. {spell.spellName} (AP {spell.apCost}, S {spell.spellSlotCost}){cooldownText}";
             }
 
             bool canCast = gladiator.RemainingAP >= spell.apCost &&
                            gladiator.CurrentSpellSlots >= spell.spellSlotCost &&
+                           cooldownRemaining <= 0 &&
                            gladiator.HasValidSpellTargets(spell) &&
                            gladiator.IsPlayerControlled;
             entry.button.interactable = canCast;

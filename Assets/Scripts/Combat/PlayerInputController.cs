@@ -255,7 +255,7 @@ public class PlayerInputController : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hitInfo, 100f))
         {
             Gladiator hitGladiator = hitInfo.collider.GetComponentInParent<Gladiator>();
-            if (hitGladiator != null && hitGladiator != selectedGladiator)
+            if (hitGladiator != null && hitGladiator != selectedGladiator && selectedGladiator.CanBasicAttack())
             {
                 AttackGladiator(hitGladiator);
                 return;
@@ -398,6 +398,11 @@ public class PlayerInputController : MonoBehaviour
             return;
         }
 
+        if (!selectedGladiator.CanBasicAttack())
+        {
+            return;
+        }
+
         if (selectedGladiator.IsMoving)
         {
             return;
@@ -518,6 +523,11 @@ public class PlayerInputController : MonoBehaviour
             return;
         }
 
+        if (!selectedGladiator.CanBasicAttack())
+        {
+            return;
+        }
+
         if (DebugSettings.VERBOSE_LOGGING)
         {
             Debug.Log($"PlayerInputController: Setting attack highlights for {selectedGladiator.name}.");
@@ -568,6 +578,11 @@ public class PlayerInputController : MonoBehaviour
     {
         SpellData spell = GetSelectedSpell();
         if (selectedGladiator == null || spell == null || GridManager.Instance == null)
+        {
+            return;
+        }
+
+        if (!selectedGladiator.CanCastSpell(spell))
         {
             return;
         }
@@ -749,8 +764,7 @@ public class PlayerInputController : MonoBehaviour
             return false;
         }
 
-        if (selectedGladiator.RemainingAP < spell.apCost ||
-            selectedGladiator.CurrentSpellSlots < spell.spellSlotCost)
+        if (!selectedGladiator.CanCastSpell(spell))
         {
             return false;
         }
@@ -858,8 +872,9 @@ public class PlayerInputController : MonoBehaviour
 
         bool canMove = selectedGladiator.RemainingMP > 0 && HasValidMoves();
         bool canAttack = selectedGladiator.RemainingAP > 0 && HasValidAttacks();
+        bool canCast = selectedGladiator.RemainingAP > 0 && HasValidSpells();
 
-        if (!canMove && !canAttack)
+        if (!canMove && !canAttack && !canCast)
         {
             if (DebugSettings.VERBOSE_LOGGING)
             {
@@ -900,8 +915,41 @@ public class PlayerInputController : MonoBehaviour
             return false;
         }
 
+        if (!selectedGladiator.CanBasicAttack())
+        {
+            return false;
+        }
+
         List<Gladiator> targets = selectedGladiator.GetAttackableTargets();
         return targets != null && targets.Count > 0;
+    }
+
+    private bool HasValidSpells()
+    {
+        if (selectedGladiator == null || selectedGladiator.KnownSpells == null)
+        {
+            return false;
+        }
+
+        foreach (SpellData spell in selectedGladiator.KnownSpells)
+        {
+            if (spell == null)
+            {
+                continue;
+            }
+
+            if (!selectedGladiator.CanCastSpell(spell))
+            {
+                continue;
+            }
+
+            if (selectedGladiator.HasValidSpellTargets(spell))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void StartAutoEndRoutine()
