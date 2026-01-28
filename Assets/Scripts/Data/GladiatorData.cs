@@ -59,6 +59,8 @@ namespace ArenaTactics.Data
         [Header("Starting Equipment")]
         public WeaponData startingWeapon;
 
+        public ArmorData startingArmor;
+
         [Header("Starting Spells")]
         public List<SpellData> startingSpells = new List<SpellData>();
     }

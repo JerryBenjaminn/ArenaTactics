@@ -343,7 +343,23 @@ public class GladiatorInfoWindow : MonoBehaviour
 
         if (armorText != null)
         {
-            armorText.text = "Armor: None";
+            ArmorData armor = currentGladiator.EquippedArmor;
+            if (armor != null)
+            {
+                string dodgeText = armor.dodgeBonus != 0f ? $" Dodge {armor.dodgeBonus:P0}," : string.Empty;
+                string moveText = armor.movementPenalty != 0 ? $" MP {armor.movementPenalty}," : string.Empty;
+                string spellText = armor.spellPowerBonus > 0f ? $" Spell {armor.spellPowerBonus:P0}," : string.Empty;
+                string slotsText = armor.spellSlotBonus > 0 ? $" Slots +{armor.spellSlotBonus}," : string.Empty;
+
+                armorText.text =
+                    $"Armor: {armor.armorName} (HP +{armor.hpBonus}, DEF +{armor.defenseBonus}," +
+                    $" STR +{armor.strengthBonus}, DEX +{armor.dexterityBonus}, INT +{armor.intelligenceBonus}," +
+                    $"{dodgeText}{moveText}{spellText}{slotsText} Tier {armor.tier})";
+            }
+            else
+            {
+                armorText.text = "Armor: None";
+            }
         }
 
         if (trinketText != null)

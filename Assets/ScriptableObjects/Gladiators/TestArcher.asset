@@ -31,3 +31,4 @@ MonoBehaviour:
   actionPoints: 1
   team: 0
   startingWeapon: {fileID: 11400000, guid: f0e1d2c3b4a5968778695a4b3c2d1e0f, type: 2}
+  startingArmor: {fileID: 11400000, guid: 7d0e1f2a3b4c5d6e7f8091a2b3c4d5e6, type: 2}

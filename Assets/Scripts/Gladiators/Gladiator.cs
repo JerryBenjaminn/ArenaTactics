@@ -18,6 +18,10 @@ public class Gladiator : MonoBehaviour
     [SerializeField]
     private WeaponData equippedWeapon;
 
+    [Header("Armor")]
+    [SerializeField]
+    private ArmorData equippedArmor;
+
     [SerializeField]
     private int baseAttackRange = 1;
 
@@ -102,6 +106,11 @@ public class Gladiator : MonoBehaviour
     public WeaponData EquippedWeapon => equippedWeapon;
 
     /// <summary>
+    /// Gets the armor currently equipped by this gladiator.
+    /// </summary>
+    public ArmorData EquippedArmor => equippedArmor;
+
+    /// <summary>
     /// Gets the gladiator's current grid position.
     /// </summary>
     public Vector2Int CurrentGridPosition => currentGridPosition;
@@ -149,7 +158,11 @@ public class Gladiator : MonoBehaviour
     /// <summary>
     /// Gets the maximum hit points for this gladiator instance.
     /// </summary>
-    public int MaxHP => data != null ? data.MaxHP + GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.hpGrowth : 0) : 0;
+    public int MaxHP => data != null
+        ? data.MaxHP +
+          GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.hpGrowth : 0) +
+          (equippedArmor != null ? equippedArmor.hpBonus : 0)
+        : 0;
 
     /// <summary>
     /// Gets the remaining movement points for this turn.
@@ -169,7 +182,9 @@ public class Gladiator : MonoBehaviour
     /// <summary>
     /// Gets the maximum movement points for this gladiator.
     /// </summary>
-    public int MaxMP => data != null ? data.MovementPoints : 0;
+    public int MaxMP => Mathf.Max(0, data != null
+        ? data.MovementPoints + (equippedArmor != null ? equippedArmor.movementPenalty : 0)
+        : 0);
 
     /// <summary>
     /// Gets the maximum action points for this gladiator.
@@ -212,8 +227,6 @@ public class Gladiator : MonoBehaviour
 
         if (data != null)
         {
-            remainingMP = data.MovementPoints;
-            remainingAP = data.ActionPoints;
             if (data.startingWeapon != null)
             {
                 EquipWeapon(data.startingWeapon);
@@ -222,6 +235,19 @@ public class Gladiator : MonoBehaviour
             {
                 UnequipWeapon();
             }
+
+            if (data.startingArmor != null)
+            {
+                EquipArmor(data.startingArmor);
+            }
+            else
+            {
+                UnequipArmor();
+            }
+
+            currentHP = MaxHP;
+            remainingMP = MaxMP;
+            remainingAP = data.ActionPoints;
 
             knownSpells.Clear();
             spellCooldowns.Clear();
@@ -302,7 +328,8 @@ public class Gladiator : MonoBehaviour
 
         remainingMP = data.MovementPoints +
                       GetEffectModifier(EffectType.MovementBuff) +
-                      GetEffectModifier(EffectType.MovementDebuff);
+                      GetEffectModifier(EffectType.MovementDebuff) +
+                      (equippedArmor != null ? equippedArmor.movementPenalty : 0);
         remainingMP = Mathf.Max(0, remainingMP);
         remainingAP = data.ActionPoints;
         UpdateSpellCooldowns();
@@ -713,6 +740,18 @@ public class Gladiator : MonoBehaviour
         equippedWeapon = null;
     }
 
+    public void EquipArmor(ArmorData armor)
+    {
+        equippedArmor = armor;
+        currentHP = MaxHP;
+    }
+
+    public void UnequipArmor()
+    {
+        equippedArmor = null;
+        currentHP = Mathf.Min(currentHP, MaxHP);
+    }
+
     /// <summary>
     /// Returns the current attack range based on equipped weapon or base range.
     /// </summary>
@@ -804,6 +843,10 @@ public class Gladiator : MonoBehaviour
         {
             strength += equippedWeapon.strengthBonus;
         }
+        if (equippedArmor != null)
+        {
+            strength += equippedArmor.strengthBonus;
+        }
         return strength;
     }
 
@@ -817,6 +860,10 @@ public class Gladiator : MonoBehaviour
         {
             dexterity += equippedWeapon.dexterityBonus;
         }
+        if (equippedArmor != null)
+        {
+            dexterity += equippedArmor.dexterityBonus;
+        }
         return dexterity;
     }
 
@@ -829,6 +876,10 @@ public class Gladiator : MonoBehaviour
         if (equippedWeapon != null)
         {
             intelligence += equippedWeapon.intelligenceBonus;
+        }
+        if (equippedArmor != null)
+        {
+            intelligence += equippedArmor.intelligenceBonus;
         }
         return intelligence;
     }
@@ -844,6 +895,10 @@ public class Gladiator : MonoBehaviour
         if (equippedWeapon != null)
         {
             defense += equippedWeapon.defenseBonus;
+        }
+        if (equippedArmor != null)
+        {
+            defense += equippedArmor.defenseBonus;
         }
         return defense;
     }
@@ -909,6 +964,10 @@ public class Gladiator : MonoBehaviour
         }
 
         float dodge = GetTotalDexterity() * 0.015f;
+        if (equippedArmor != null)
+        {
+            dodge += equippedArmor.dodgeBonus;
+        }
         return Mathf.Clamp(dodge, 0f, 0.5f);
     }
 
@@ -960,17 +1019,26 @@ public class Gladiator : MonoBehaviour
         {
             slots += equippedWeapon.spellSlotBonus;
         }
+        if (equippedArmor != null)
+        {
+            slots += equippedArmor.spellSlotBonus;
+        }
         return slots;
     }
 
     public float GetSpellPowerBonus()
     {
-        if (equippedWeapon == null)
+        float bonus = 0f;
+        if (equippedWeapon != null)
         {
-            return 0f;
+            bonus += equippedWeapon.spellPowerBonus;
+        }
+        if (equippedArmor != null)
+        {
+            bonus += equippedArmor.spellPowerBonus;
         }
 
-        return equippedWeapon.spellPowerBonus;
+        return bonus;
     }
 
     /// <summary>
