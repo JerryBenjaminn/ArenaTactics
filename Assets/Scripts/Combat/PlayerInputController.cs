@@ -109,7 +109,28 @@ public class PlayerInputController : MonoBehaviour
             BattleManager.BattleState state = BattleManager.Instance.GetBattleState();
             if (state == BattleManager.BattleState.Deployment)
             {
-                Debug.Log("PlayerInputController.Update - Skipping, in Deployment");
+                if (Input.GetMouseButtonDown(1))
+                {
+                    rightClickStartPos = Input.mousePosition;
+                }
+
+                if (Input.GetMouseButtonUp(1))
+                {
+                    float dragDistance = Vector3.Distance(Input.mousePosition, rightClickStartPos);
+                    if (dragDistance < MinRightClickDrag)
+                    {
+                        CameraController cameraController = FindAnyObjectByType<CameraController>();
+                        if (cameraController == null || !cameraController.IsRotating())
+                        {
+                            HandleRightClick();
+                        }
+                    }
+                }
+
+                if (DebugSettings.VERBOSE_LOGGING)
+                {
+                    Debug.Log("PlayerInputController.Update - Skipping combat input, in Deployment");
+                }
                 return;
             }
         }
