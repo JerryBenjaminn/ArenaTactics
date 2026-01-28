@@ -631,13 +631,196 @@ public class Gladiator : MonoBehaviour
     }
 
     /// <summary>
-    /// Returns the total attack value including weapon damage.
+    /// Returns the total strength including equipment bonuses.
+    /// </summary>
+    public int GetTotalStrength()
+    {
+        int strength = data != null ? data.strength : 0;
+        if (equippedWeapon != null)
+        {
+            strength += equippedWeapon.strengthBonus;
+        }
+        return strength;
+    }
+
+    /// <summary>
+    /// Returns the total dexterity including equipment bonuses.
+    /// </summary>
+    public int GetTotalDexterity()
+    {
+        int dexterity = data != null ? data.dexterity : 0;
+        if (equippedWeapon != null)
+        {
+            dexterity += equippedWeapon.dexterityBonus;
+        }
+        return dexterity;
+    }
+
+    /// <summary>
+    /// Returns the total intelligence including equipment bonuses.
+    /// </summary>
+    public int GetTotalIntelligence()
+    {
+        int intelligence = data != null ? data.intelligence : 0;
+        if (equippedWeapon != null)
+        {
+            intelligence += equippedWeapon.intelligenceBonus;
+        }
+        return intelligence;
+    }
+
+    /// <summary>
+    /// Returns the total defense including equipment bonuses.
+    /// </summary>
+    public int GetTotalDefense()
+    {
+        int defense = data != null ? data.defense : 0;
+        if (equippedWeapon != null)
+        {
+            defense += equippedWeapon.defenseBonus;
+        }
+        return defense;
+    }
+
+    /// <summary>
+    /// Returns the total attack value based on weapon scaling.
     /// </summary>
     public int GetTotalAttack()
     {
-        int baseAttack = data != null ? data.attack : 0;
-        int weaponDamage = equippedWeapon != null ? equippedWeapon.baseDamage : 0;
-        return baseAttack + weaponDamage;
+        if (data == null)
+        {
+            return 0;
+        }
+
+        if (equippedWeapon != null)
+        {
+            int baseAttack = equippedWeapon.baseDamage;
+            switch (equippedWeapon.scalingStat)
+            {
+                case ScalingStat.Dexterity:
+                    baseAttack += GetTotalDexterity();
+                    break;
+                case ScalingStat.Intelligence:
+                    baseAttack += GetTotalIntelligence();
+                    break;
+                default:
+                    baseAttack += GetTotalStrength();
+                    break;
+            }
+            return baseAttack;
+        }
+
+        return GetTotalStrength();
+    }
+
+    /// <summary>
+    /// Returns the hit chance (accuracy) for this gladiator.
+    /// </summary>
+    public float GetAccuracy()
+    {
+        if (data == null)
+        {
+            return 0.75f;
+        }
+
+        float accuracy = 0.75f + (GetTotalDexterity() * 0.02f);
+        if (equippedWeapon != null)
+        {
+            accuracy += equippedWeapon.accuracyBonus;
+        }
+
+        return Mathf.Clamp(accuracy, 0f, 0.99f);
+    }
+
+    /// <summary>
+    /// Returns the chance to dodge incoming attacks.
+    /// </summary>
+    public float GetDodgeChance()
+    {
+        if (data == null)
+        {
+            return 0f;
+        }
+
+        float dodge = GetTotalDexterity() * 0.015f;
+        return Mathf.Clamp(dodge, 0f, 0.5f);
+    }
+
+    /// <summary>
+    /// Returns the critical hit chance for physical attacks.
+    /// </summary>
+    public float GetCritChance()
+    {
+        if (data == null)
+        {
+            return 0.05f;
+        }
+
+        float crit = 0.05f + (GetTotalDexterity() * 0.01f);
+        if (equippedWeapon != null)
+        {
+            crit += equippedWeapon.critBonus;
+        }
+
+        return Mathf.Clamp(crit, 0f, 0.75f);
+    }
+
+    /// <summary>
+    /// Returns the critical hit chance for spells.
+    /// </summary>
+    public float GetSpellCritChance()
+    {
+        if (data == null)
+        {
+            return 0.05f;
+        }
+
+        float spellCrit = 0.05f + (GetTotalIntelligence() * 0.01f);
+        return Mathf.Clamp(spellCrit, 0f, 0.75f);
+    }
+
+    /// <summary>
+    /// Returns the number of spell slots available.
+    /// </summary>
+    public int GetSpellSlots()
+    {
+        if (data == null)
+        {
+            return 0;
+        }
+
+        int slots = GetTotalIntelligence() / 3;
+        if (equippedWeapon != null)
+        {
+            slots += equippedWeapon.spellSlotBonus;
+        }
+        return slots;
+    }
+
+    /// <summary>
+    /// Returns the initiative value used for turn order.
+    /// </summary>
+    public int GetInitiative()
+    {
+        if (data == null)
+        {
+            return 0;
+        }
+
+        return data.speed + (GetTotalDexterity() / 2);
+    }
+
+    /// <summary>
+    /// Returns magic resistance derived from intelligence.
+    /// </summary>
+    public int GetMagicResistance()
+    {
+        if (data == null)
+        {
+            return 0;
+        }
+
+        return GetTotalIntelligence() / 2;
     }
 
     /// <summary>

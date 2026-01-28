@@ -150,9 +150,15 @@ public class BattleManager : MonoBehaviour
     /// </summary>
     public void CalculateInitiative()
     {
+        if (allGladiators == null || allGladiators.Count == 0)
+        {
+            turnOrder = new List<Gladiator>();
+            return;
+        }
+
         turnOrder = allGladiators
             .Where(g => g != null)
-            .OrderByDescending(g => g.Data != null ? g.Data.speed : 0)
+            .OrderByDescending(g => g.GetInitiative())
             .ThenBy(_ => Random.value)
             .ToList();
 
@@ -162,9 +168,13 @@ public class BattleManager : MonoBehaviour
             for (int i = 0; i < turnOrder.Count; i++)
             {
                 Gladiator gladiator = turnOrder[i];
-                string name = gladiator != null && gladiator.Data != null ? gladiator.Data.gladiatorName : "Unknown";
-                int speed = gladiator != null && gladiator.Data != null ? gladiator.Data.speed : 0;
-                Debug.Log($"  [{i}] {name} (Speed: {speed})");
+                if (gladiator == null || gladiator.Data == null)
+                {
+                    continue;
+                }
+
+                int initiative = gladiator.GetInitiative();
+                Debug.Log($"  [{i}] {gladiator.Data.gladiatorName}: {initiative} (Speed {gladiator.Data.speed} + DEX {gladiator.Data.dexterity}/2)");
             }
         }
     }

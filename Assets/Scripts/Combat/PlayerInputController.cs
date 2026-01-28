@@ -382,14 +382,21 @@ public class PlayerInputController : MonoBehaviour
             return;
         }
 
-        int damage = CombatSystem.CalculateDamage(selectedGladiator, target);
-        target.TakeDamage(damage);
+        bool didCrit;
+        bool didMiss;
+        int damage = CombatSystem.CalculateDamage(selectedGladiator, target, out didCrit, out didMiss);
+        if (damage > 0)
+        {
+            target.TakeDamage(damage);
+        }
         selectedGladiator.TrySpendAP(1);
         hasAttackedThisTurn = true;
 
         if (DebugSettings.LOG_COMBAT)
         {
-            Debug.Log($"PlayerInputController: Attacked {target.name} for {damage} damage.");
+            string result = didMiss ? "missed" : $"hit for {damage} damage";
+            string critNote = didCrit ? " (CRIT)" : string.Empty;
+            Debug.Log($"PlayerInputController: Attacked {target.name} and {result}{critNote}.");
         }
 
         ClearAllHighlights();

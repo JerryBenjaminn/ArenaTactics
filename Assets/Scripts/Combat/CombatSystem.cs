@@ -8,16 +8,50 @@ public static class CombatSystem
     /// <summary>
     /// Calculates damage dealt by the attacker to the defender.
     /// </summary>
-    public static int CalculateDamage(Gladiator attacker, Gladiator defender)
+    public static int CalculateDamage(Gladiator attacker, Gladiator defender, out bool didCrit, out bool didMiss)
     {
-        int attack = attacker != null ? attacker.GetTotalAttack() : 0;
-        int defense = defender != null && defender.Data != null ? defender.Data.defense : 0;
-        int rawDamage = attack - defense;
-        int finalDamage = Mathf.Max(1, rawDamage);
+        didCrit = false;
+        didMiss = false;
+
+        if (attacker == null || defender == null)
+        {
+            return 0;
+        }
+
+        float hitChance = attacker.GetAccuracy() - defender.GetDodgeChance();
+        hitChance = Mathf.Clamp(hitChance, 0.05f, 0.99f);
+
+        float hitRoll = Random.value;
+        if (hitRoll > hitChance)
+        {
+            didMiss = true;
+            if (DebugSettings.LOG_COMBAT)
+            {
+                Debug.Log($"CombatSystem: {attacker.name} MISSED {defender.name} (needed {hitChance:P0}, rolled {hitRoll:P0})");
+            }
+            return 0;
+        }
+
+        int attack = attacker.GetTotalAttack();
+        int defense = defender.GetTotalDefense();
+
+        float critChance = attacker.GetCritChance();
+        float critRoll = Random.value;
+        if (critRoll <= critChance)
+        {
+            didCrit = true;
+            attack = Mathf.RoundToInt(attack * 1.5f);
+            if (DebugSettings.LOG_COMBAT)
+            {
+                Debug.Log($"CombatSystem: CRITICAL HIT! {attacker.name} -> {defender.name}");
+            }
+        }
+
+        int finalDamage = Mathf.Max(1, attack - defense);
 
         if (DebugSettings.LOG_COMBAT)
         {
-            Debug.Log($"CombatSystem.CalculateDamage - Attacker: {attacker?.name}, Attack: {attack}, Defender: {defender?.name}, Defense: {defense}, Final: {finalDamage}");
+            Debug.Log($"CombatSystem: {attacker.name} -> {defender.name}: {finalDamage} damage (Attack: {attack}, Defense: {defense}, Crit: {didCrit})");
         }
         return finalDamage;
     }

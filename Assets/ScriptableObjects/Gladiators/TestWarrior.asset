@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: TestWarrior
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorData
   gladiatorName: Warrior
-  maxHP: 80
-  currentHP: 80
+  maxHP: 100
+  currentHP: 100
   speed: 5
-  attack: 10
-  defense: 3
+  strength: 8
+  dexterity: 4
+  intelligence: 2
+  defense: 5
   movementPoints: 3
   actionPoints: 1
   team: 0

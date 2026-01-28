@@ -20,14 +20,20 @@ namespace ArenaTactics.Data
         [Header("Identity")]
         public string gladiatorName;
 
-        [Header("Stats")]
+        [Header("Primary Stats")]
         public int maxHP = 100;
         public int currentHP = 100;
         public int speed = 5;
-        public int attack = 10;
+
+        [Header("Combat Stats")]
+        public int strength = 5;
+        public int dexterity = 5;
+        public int intelligence = 5;
+
+        [Header("Defense")]
         public int defense = 5;
 
-        [Header("Turn Resources")]
+        [Header("Action Points")]
         public int movementPoints = 3;
         public int actionPoints = 1;
 

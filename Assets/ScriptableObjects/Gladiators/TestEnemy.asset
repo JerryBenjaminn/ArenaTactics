@@ -16,8 +16,10 @@ MonoBehaviour:
   maxHP: 80
   currentHP: 80
   speed: 4
-  attack: 8
-  defense: 2
+  strength: 6
+  dexterity: 5
+  intelligence: 3
+  defense: 3
   movementPoints: 3
   actionPoints: 1
   team: 1

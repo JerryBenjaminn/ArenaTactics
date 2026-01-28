@@ -25,9 +25,19 @@ public class GladiatorInfoWindow : MonoBehaviour
 
     [Header("Stats")]
     [SerializeField] private TextMeshProUGUI attackText;
+    [SerializeField] private TextMeshProUGUI strengthText;
+    [SerializeField] private TextMeshProUGUI dexterityText;
+    [SerializeField] private TextMeshProUGUI intelligenceText;
     [SerializeField] private TextMeshProUGUI defenseText;
     [SerializeField] private TextMeshProUGUI speedText;
     [SerializeField] private TextMeshProUGUI movementText;
+    [SerializeField] private TextMeshProUGUI accuracyText;
+    [SerializeField] private TextMeshProUGUI dodgeText;
+    [SerializeField] private TextMeshProUGUI critText;
+    [SerializeField] private TextMeshProUGUI spellCritText;
+    [SerializeField] private TextMeshProUGUI initiativeText;
+    [SerializeField] private TextMeshProUGUI magicResistText;
+    [SerializeField] private TextMeshProUGUI spellSlotsText;
 
     [Header("Equipment")]
     [SerializeField] private TextMeshProUGUI weaponText;
@@ -148,18 +158,46 @@ public class GladiatorInfoWindow : MonoBehaviour
 
         if (attackText != null)
         {
-            int baseAttack = data.attack;
             int totalAttack = currentGladiator.GetTotalAttack();
-            int weaponBonus = totalAttack - baseAttack;
+            string scaling = "STR";
+            if (currentGladiator.EquippedWeapon != null)
+            {
+                switch (currentGladiator.EquippedWeapon.scalingStat)
+                {
+                    case ScalingStat.Dexterity:
+                        scaling = "DEX";
+                        break;
+                    case ScalingStat.Intelligence:
+                        scaling = "INT";
+                        break;
+                }
+            }
+            attackText.text = $"Attack: {totalAttack} ({scaling})";
+        }
 
-            attackText.text = weaponBonus > 0
-                ? $"Attack: {totalAttack} ({baseAttack} +{weaponBonus})"
-                : $"Attack: {baseAttack}";
+        if (strengthText != null)
+        {
+            strengthText.text = $"STR: {currentGladiator.GetTotalStrength()}";
+        }
+
+        if (dexterityText != null)
+        {
+            dexterityText.text = $"DEX: {currentGladiator.GetTotalDexterity()}";
+        }
+
+        if (intelligenceText != null)
+        {
+            intelligenceText.text = $"INT: {currentGladiator.GetTotalIntelligence()}";
         }
 
         if (defenseText != null)
         {
-            defenseText.text = $"Defense: {data.defense}";
+            int baseDefense = data.defense;
+            int totalDefense = currentGladiator.GetTotalDefense();
+            int bonusDefense = totalDefense - baseDefense;
+            defenseText.text = bonusDefense > 0
+                ? $"Defense: {totalDefense} ({baseDefense} +{bonusDefense})"
+                : $"Defense: {baseDefense}";
         }
 
         if (speedText != null)
@@ -170,6 +208,41 @@ public class GladiatorInfoWindow : MonoBehaviour
         if (movementText != null)
         {
             movementText.text = $"Movement: {data.movementPoints}";
+        }
+
+        if (accuracyText != null)
+        {
+            accuracyText.text = $"Accuracy: {currentGladiator.GetAccuracy():P0}";
+        }
+
+        if (dodgeText != null)
+        {
+            dodgeText.text = $"Dodge: {currentGladiator.GetDodgeChance():P0}";
+        }
+
+        if (critText != null)
+        {
+            critText.text = $"Crit: {currentGladiator.GetCritChance():P0}";
+        }
+
+        if (spellCritText != null)
+        {
+            spellCritText.text = $"Spell Crit: {currentGladiator.GetSpellCritChance():P0}";
+        }
+
+        if (initiativeText != null)
+        {
+            initiativeText.text = $"Initiative: {currentGladiator.GetInitiative()}";
+        }
+
+        if (magicResistText != null)
+        {
+            magicResistText.text = $"Magic Res: {currentGladiator.GetMagicResistance()}";
+        }
+
+        if (spellSlotsText != null)
+        {
+            spellSlotsText.text = $"Spell Slots: {currentGladiator.GetSpellSlots()}";
         }
 
         UpdateEquipment();

@@ -169,13 +169,20 @@ public static class AIController
             yield break;
         }
 
-        int damage = CombatSystem.CalculateDamage(attacker, target);
-        target.TakeDamage(damage);
+        bool didCrit;
+        bool didMiss;
+        int damage = CombatSystem.CalculateDamage(attacker, target, out didCrit, out didMiss);
+        if (damage > 0)
+        {
+            target.TakeDamage(damage);
+        }
         attacker.TrySpendAP(1);
 
         if (DebugSettings.LOG_COMBAT)
         {
-            Debug.Log($"AIController: {attacker.name} attacked {target.name} for {damage} damage.");
+            string result = didMiss ? "missed" : $"hit for {damage} damage";
+            string critNote = didCrit ? " (CRIT)" : string.Empty;
+            Debug.Log($"AIController: {attacker.name} attacked {target.name} and {result}{critNote}.");
         }
         yield return new WaitForSeconds(0.3f);
     }

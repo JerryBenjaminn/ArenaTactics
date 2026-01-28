@@ -19,3 +19,11 @@ MonoBehaviour:
   attackRange: 2
   requiresLineOfSight: 0
   actionPointCost: 1
+  scalingStat: 0
+  strengthBonus: 0
+  dexterityBonus: 1
+  intelligenceBonus: 0
+  defenseBonus: 0
+  accuracyBonus: 0
+  critBonus: 0
+  spellSlotBonus: 0
