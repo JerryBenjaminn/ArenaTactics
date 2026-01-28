@@ -1484,8 +1484,8 @@ MonoBehaviour:
   enemyArcherData: {fileID: 11400000, guid: 77770000111122223333444455556666, type: 2}
   enemyMageData: {fileID: 11400000, guid: 66660000111122223333444455556666, type: 2}
   enemyTankData: {fileID: 11400000, guid: 55550000111122223333444455556666, type: 2}
-  basicSword: {fileID: 11400000, guid: 7b9c2d4e6f80123456789abcdeff1234, type: 2}
-  basicSpear: {fileID: 11400000, guid: 9c1e3f5a7b8091a2b3c4d5e6f7081920, type: 2}
+  basicSword: {fileID: 0}
+  basicSpear: {fileID: 0}
   spawnedGladiators: []
 --- !u!4 &203067298
 Transform:
