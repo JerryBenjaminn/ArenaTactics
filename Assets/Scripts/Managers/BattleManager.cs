@@ -70,6 +70,7 @@ public class BattleManager : MonoBehaviour
     private bool wasMouseDown;
     private Vector3 dragStartMousePos;
     private const float MinDragDistance = 0.1f;
+    private bool survivalXpAwarded;
 
     /// <summary>
     /// Gets all gladiators participating in the battle.
@@ -141,6 +142,7 @@ public class BattleManager : MonoBehaviour
         turnPhase = TurnPhase.WaitingForInput;
         currentTurnIndex = 0;
         currentGladiator = null;
+        survivalXpAwarded = false;
 
         StartDeploymentPhase();
     }
@@ -236,6 +238,11 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
+        if (GridManager.Instance != null)
+        {
+            GridManager.Instance.ClearAllCellHighlights();
+        }
+
         currentTurnIndex = Mathf.Clamp(currentTurnIndex, 0, turnOrder.Count - 1);
         currentGladiator = turnOrder[currentTurnIndex];
         if (currentGladiator == null)
@@ -288,11 +295,17 @@ public class BattleManager : MonoBehaviour
         if (PlayerInputController.Instance != null)
         {
             PlayerInputController.Instance.CloseInfoWindow();
+            PlayerInputController.Instance.ClearSelection();
         }
 
         if (currentGladiator != null)
         {
             currentGladiator.ClearHighlights();
+        }
+
+        if (GridManager.Instance != null)
+        {
+            GridManager.Instance.ClearAllCellHighlights();
         }
 
         currentTurnIndex++;
@@ -356,11 +369,33 @@ public class BattleManager : MonoBehaviour
         {
             SetBattleState(BattleState.Defeat);
             Debug.Log("BattleManager: Defeat! All player gladiators are down.");
+            AwardSurvivalXP();
         }
         else if (livingEnemies == 0 && livingPlayers > 0)
         {
             SetBattleState(BattleState.Victory);
             Debug.Log("BattleManager: Victory! All enemy gladiators are down.");
+            AwardSurvivalXP();
+        }
+    }
+
+    private void AwardSurvivalXP()
+    {
+        if (survivalXpAwarded)
+        {
+            return;
+        }
+
+        survivalXpAwarded = true;
+
+        foreach (Gladiator gladiator in allGladiators)
+        {
+            if (gladiator == null || gladiator.CurrentHP <= 0)
+            {
+                continue;
+            }
+
+            gladiator.GainXP(200);
         }
     }
 

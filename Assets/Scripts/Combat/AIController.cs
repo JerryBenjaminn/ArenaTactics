@@ -174,7 +174,7 @@ public static class AIController
         int damage = CombatSystem.CalculateDamage(attacker, target, out didCrit, out didMiss);
         if (damage > 0)
         {
-            target.TakeDamage(damage);
+            target.TakeDamage(damage, attacker);
         }
         attacker.TrySpendAP(1);
 

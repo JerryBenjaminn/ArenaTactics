@@ -62,6 +62,15 @@ public class Gladiator : MonoBehaviour
     [Header("UI")]
     private HealthBarUI healthBar;
 
+    [Header("Progression")]
+    [SerializeField]
+    private int currentLevel = 1;
+
+    [SerializeField]
+    private int currentXP;
+
+    private const int MaxLevel = 10;
+
     /// <summary>
     /// Current hit points for this gladiator instance.
     /// </summary>
@@ -70,6 +79,7 @@ public class Gladiator : MonoBehaviour
 
     // Cached highlight data so we can restore tiles after highlighting.
     private readonly Dictionary<GridCell, Material> highlightedCells = new Dictionary<GridCell, Material>();
+    private readonly Dictionary<Gladiator, int> damageContributors = new Dictionary<Gladiator, int>();
 
     /// <summary>
     /// Gets this gladiator's data asset.
@@ -97,9 +107,24 @@ public class Gladiator : MonoBehaviour
     public int CurrentHP => currentHP;
 
     /// <summary>
+    /// Gets the current level for this gladiator.
+    /// </summary>
+    public int CurrentLevel => currentLevel;
+
+    /// <summary>
+    /// Gets the current XP for this gladiator.
+    /// </summary>
+    public int CurrentXP => currentXP;
+
+    /// <summary>
+    /// Gets the XP required to reach the next level.
+    /// </summary>
+    public int XPToNextLevel => currentLevel >= MaxLevel ? 0 : (currentLevel + 1) * 1000;
+
+    /// <summary>
     /// Gets the maximum hit points for this gladiator instance.
     /// </summary>
-    public int MaxHP => data != null ? data.MaxHP : 0;
+    public int MaxHP => data != null ? data.MaxHP + GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.hpGrowth : 0) : 0;
 
     /// <summary>
     /// Gets the remaining movement points for this turn.
@@ -155,7 +180,9 @@ public class Gladiator : MonoBehaviour
     {
         data = gladiatorData;
         isPlayerControlled = playerControlled;
-        currentHP = data != null ? data.MaxHP : 0;
+        currentLevel = 1;
+        currentXP = 0;
+        currentHP = data != null ? MaxHP : 0;
 
         if (data != null)
         {
@@ -250,13 +277,26 @@ public class Gladiator : MonoBehaviour
     /// <param name="damage">Final damage to apply (defense already accounted for).</param>
     public void TakeDamage(int damage)
     {
+        TakeDamage(damage, null);
+    }
+
+    /// <summary>
+    /// Applies incoming damage, tracking the source for XP awards.
+    /// </summary>
+    public void TakeDamage(int damage, Gladiator source)
+    {
         if (damage <= 0)
         {
             return;
         }
 
+        if (source != null && source != this)
+        {
+            RegisterDamage(source, damage);
+        }
+
         currentHP -= damage;
-        currentHP = Mathf.Clamp(currentHP, 0, data != null ? data.MaxHP : 0);
+        currentHP = Mathf.Clamp(currentHP, 0, MaxHP);
         if (DebugSettings.LOG_COMBAT)
         {
             Debug.Log($"Gladiator.TakeDamage - {name} took {damage} damage. HP: {currentHP}/{MaxHP}", this);
@@ -264,7 +304,7 @@ public class Gladiator : MonoBehaviour
 
         if (currentHP <= 0)
         {
-            Die();
+            Die(source);
         }
     }
 
@@ -273,9 +313,16 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public void Die()
     {
+        Die(null);
+    }
+
+    public void Die(Gladiator killer)
+    {
         Debug.Log($"Gladiator {name} has died.", this);
         ClearHighlights();
         DestroyHealthBar();
+
+        AwardDeathXP(killer);
 
         if (gridManager != null && gridManager.IsPositionValid(currentGridPosition))
         {
@@ -622,12 +669,68 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public int GetAttackRange()
     {
-        if (equippedWeapon != null && equippedWeapon.attackRange > 0)
+        if (equippedWeapon != null)
         {
-            return equippedWeapon.attackRange;
+            if (equippedWeapon.range > 0)
+            {
+                return equippedWeapon.range;
+            }
+
+            if (equippedWeapon.attackRange > 0)
+            {
+                return equippedWeapon.attackRange;
+            }
         }
 
         return baseAttackRange;
+    }
+
+    /// <summary>
+    /// Returns whether this gladiator requires line of sight to attack.
+    /// </summary>
+    public bool RequiresLineOfSight()
+    {
+        if (equippedWeapon == null)
+        {
+            return false;
+        }
+
+        if (equippedWeapon.weaponType == WeaponType.Ranged)
+        {
+            return true;
+        }
+
+        return equippedWeapon.requiresLineOfSight;
+    }
+
+    /// <summary>
+    /// Returns whether a target is within range and line of sight (if required).
+    /// </summary>
+    public bool CanAttackTarget(Gladiator target, out bool inRange, out bool hasLineOfSight)
+    {
+        inRange = false;
+        hasLineOfSight = true;
+
+        if (target == null)
+        {
+            return false;
+        }
+
+        if (gridManager == null)
+        {
+            gridManager = GridManager.Instance;
+        }
+
+        int range = GetAttackRange();
+        int distance = Mathf.Abs(currentGridPosition.x - target.currentGridPosition.x) +
+                       Mathf.Abs(currentGridPosition.y - target.currentGridPosition.y);
+        inRange = distance <= range;
+
+        bool requiresLos = RequiresLineOfSight();
+        hasLineOfSight = !requiresLos ||
+                         CombatSystem.HasLineOfSight(currentGridPosition, target.currentGridPosition, gridManager);
+
+        return inRange && hasLineOfSight;
     }
 
     /// <summary>
@@ -635,7 +738,7 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public int GetTotalStrength()
     {
-        int strength = data != null ? data.Strength : 0;
+        int strength = data != null ? data.Strength + GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.strengthGrowth : 0) : 0;
         if (equippedWeapon != null)
         {
             strength += equippedWeapon.strengthBonus;
@@ -648,7 +751,7 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public int GetTotalDexterity()
     {
-        int dexterity = data != null ? data.Dexterity : 0;
+        int dexterity = data != null ? data.Dexterity + GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.dexterityGrowth : 0) : 0;
         if (equippedWeapon != null)
         {
             dexterity += equippedWeapon.dexterityBonus;
@@ -661,7 +764,7 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public int GetTotalIntelligence()
     {
-        int intelligence = data != null ? data.Intelligence : 0;
+        int intelligence = data != null ? data.Intelligence + GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.intelligenceGrowth : 0) : 0;
         if (equippedWeapon != null)
         {
             intelligence += equippedWeapon.intelligenceBonus;
@@ -674,7 +777,7 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public int GetTotalDefense()
     {
-        int defense = data != null ? data.Defense : 0;
+        int defense = data != null ? data.Defense + GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.defenseGrowth : 0) : 0;
         if (equippedWeapon != null)
         {
             defense += equippedWeapon.defenseBonus;
@@ -807,7 +910,8 @@ public class Gladiator : MonoBehaviour
             return 0;
         }
 
-        return data.Speed + (GetTotalDexterity() / 2);
+        int speed = data.Speed + GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.speedGrowth : 0);
+        return speed + (GetTotalDexterity() / 2);
     }
 
     /// <summary>
@@ -821,6 +925,103 @@ public class Gladiator : MonoBehaviour
         }
 
         return GetTotalIntelligence() / 2;
+    }
+
+    /// <summary>
+    /// Grants experience points and checks for level ups.
+    /// </summary>
+    public void GainXP(int amount)
+    {
+        if (amount <= 0 || currentLevel >= MaxLevel)
+        {
+            return;
+        }
+
+        currentXP += amount;
+        CheckLevelUp();
+    }
+
+    private void CheckLevelUp()
+    {
+        while (currentLevel < MaxLevel)
+        {
+            int requiredXP = (currentLevel + 1) * 1000;
+            if (currentXP < requiredXP)
+            {
+                break;
+            }
+
+            currentXP -= requiredXP;
+            currentLevel++;
+
+            int hpGrowth = data != null && data.gladiatorClass != null ? data.gladiatorClass.hpGrowth : 0;
+            if (hpGrowth > 0)
+            {
+                currentHP = Mathf.Clamp(currentHP + hpGrowth, 0, MaxHP);
+            }
+
+            Debug.Log($"Gladiator {name} leveled up to {currentLevel}!", this);
+        }
+    }
+
+    private void RegisterDamage(Gladiator source, int amount)
+    {
+        if (source == null || amount <= 0)
+        {
+            return;
+        }
+
+        if (damageContributors.ContainsKey(source))
+        {
+            damageContributors[source] += amount;
+        }
+        else
+        {
+            damageContributors[source] = amount;
+        }
+    }
+
+    private void AwardDeathXP(Gladiator killer)
+    {
+        int enemyLevel = currentLevel;
+        if (enemyLevel <= 0)
+        {
+            return;
+        }
+
+        if (killer != null)
+        {
+            killer.GainXP(enemyLevel * 100);
+        }
+
+        foreach (KeyValuePair<Gladiator, int> entry in damageContributors)
+        {
+            Gladiator contributor = entry.Key;
+            if (contributor == null || contributor == killer)
+            {
+                continue;
+            }
+
+            if (contributor.CurrentHP <= 0)
+            {
+                continue;
+            }
+
+            contributor.GainXP(enemyLevel * 50);
+        }
+
+        damageContributors.Clear();
+    }
+
+    private int GetLevelGrowthValue(int growthPerLevel)
+    {
+        if (growthPerLevel <= 0)
+        {
+            return 0;
+        }
+
+        int levelsGained = Mathf.Max(0, currentLevel - 1);
+        return levelsGained * growthPerLevel;
     }
 
     /// <summary>
@@ -893,7 +1094,7 @@ public class Gladiator : MonoBehaviour
 
                             if (isEnemy)
                             {
-                                bool hasLineOfSight = equippedWeapon == null || !equippedWeapon.requiresLineOfSight ||
+                                bool hasLineOfSight = !RequiresLineOfSight() ||
                                                       CombatSystem.HasLineOfSight(currentGridPosition, pos, gridManager);
 
                                 if (hasLineOfSight && !targets.Contains(target))
@@ -929,6 +1130,73 @@ public class Gladiator : MonoBehaviour
             Debug.Log($"Gladiator.GetAttackableTargets result: {targets.Count} targets found", this);
         }
         return targets;
+    }
+
+    /// <summary>
+    /// Returns a list of grid positions within attack range (filtered by LOS if needed).
+    /// </summary>
+    public List<Vector2Int> GetAttackableCells()
+    {
+        var cells = new List<Vector2Int>();
+
+        if (gridManager == null)
+        {
+            gridManager = GridManager.Instance;
+        }
+
+        if (gridManager == null)
+        {
+            return cells;
+        }
+
+        int range = GetAttackRange();
+        var visited = new HashSet<Vector2Int>();
+        var queue = new Queue<(Vector2Int pos, int cost)>();
+
+        visited.Add(currentGridPosition);
+        queue.Enqueue((currentGridPosition, 0));
+
+        Vector2Int[] directions =
+        {
+            Vector2Int.up,
+            Vector2Int.down,
+            Vector2Int.left,
+            Vector2Int.right
+        };
+
+        while (queue.Count > 0)
+        {
+            var (pos, cost) = queue.Dequeue();
+
+            if (cost > 0)
+            {
+                bool hasLineOfSight = !RequiresLineOfSight() ||
+                                      CombatSystem.HasLineOfSight(currentGridPosition, pos, gridManager);
+                if (hasLineOfSight)
+                {
+                    cells.Add(pos);
+                }
+            }
+
+            if (cost >= range)
+            {
+                continue;
+            }
+
+            foreach (Vector2Int dir in directions)
+            {
+                Vector2Int next = pos + dir;
+                if (!gridManager.IsPositionValid(next) || visited.Contains(next))
+                {
+                    continue;
+                }
+
+                visited.Add(next);
+                queue.Enqueue((next, cost + 1));
+            }
+        }
+
+        return cells;
     }
 
     /// <summary>
@@ -1042,6 +1310,11 @@ public class Gladiator : MonoBehaviour
         {
             highlightedCells.Clear();
             return;
+        }
+
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"Gladiator.ClearHighlights - Clearing {highlightedCells.Count} movement cells for {name}.", this);
         }
 
         foreach (KeyValuePair<GridCell, Material> kvp in highlightedCells)

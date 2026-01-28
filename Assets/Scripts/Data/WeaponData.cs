@@ -7,11 +7,9 @@ namespace ArenaTactics.Data
     /// </summary>
     public enum WeaponType
     {
-        Sword,
-        Spear,
-        Bow,
-        Sling,
-        Staff
+        Melee,
+        Ranged,
+        Magic
     }
 
     /// <summary>
@@ -48,6 +46,7 @@ namespace ArenaTactics.Data
 
         [Header("Combat Stats")]
         public int baseDamage = 0;
+        public int range = 1;
         public int attackRange = 1;
         public bool requiresLineOfSight;
         public int actionPointCost = 1;

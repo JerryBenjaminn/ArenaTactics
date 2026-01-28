@@ -28,6 +28,14 @@ namespace ArenaTactics.Data
         public int baseMovementPoints = 3;
         public int baseActionPoints = 1;
 
+        [Header("Growth Rates (Per Level)")]
+        public int hpGrowth = 10;
+        public int strengthGrowth = 1;
+        public int dexterityGrowth = 1;
+        public int intelligenceGrowth = 1;
+        public int defenseGrowth = 1;
+        public int speedGrowth = 0;
+
         [Header("Class Traits")]
         [TextArea(2, 4)]
         public string traits;

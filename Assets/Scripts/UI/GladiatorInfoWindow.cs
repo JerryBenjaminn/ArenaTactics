@@ -23,6 +23,9 @@ public class GladiatorInfoWindow : MonoBehaviour
     [SerializeField] private Image mpBarFill;
     [SerializeField] private TextMeshProUGUI mpText;
     [SerializeField] private TextMeshProUGUI apText;
+    [SerializeField] private Image xpBarFill;
+    [SerializeField] private TextMeshProUGUI xpText;
+    [SerializeField] private TextMeshProUGUI levelText;
 
     [Header("Stats")]
     [SerializeField] private TextMeshProUGUI attackText;
@@ -164,6 +167,13 @@ public class GladiatorInfoWindow : MonoBehaviour
             apText.text = $"AP: {currentGladiator.RemainingAP}/{currentGladiator.MaxAP}";
         }
 
+        if (levelText != null)
+        {
+            levelText.text = $"Level: {currentGladiator.CurrentLevel}";
+        }
+
+        UpdateXPBar();
+
         if (attackText != null)
         {
             int totalAttack = currentGladiator.GetTotalAttack();
@@ -278,6 +288,36 @@ public class GladiatorInfoWindow : MonoBehaviour
         }
     }
 
+    private void UpdateXPBar()
+    {
+        if (xpBarFill != null)
+        {
+            int requiredXP = currentGladiator.XPToNextLevel;
+            float percent = requiredXP > 0 ? (float)currentGladiator.CurrentXP / requiredXP : 1f;
+
+            RectTransform fillRect = xpBarFill.GetComponent<RectTransform>();
+            RectTransform bgRect = xpBarFill.transform.parent.GetComponent<RectTransform>();
+
+            if (fillRect != null && bgRect != null)
+            {
+                float maxWidth = bgRect.rect.width;
+                fillRect.sizeDelta = new Vector2(maxWidth * Mathf.Clamp01(percent), fillRect.sizeDelta.y);
+            }
+        }
+
+        if (xpText != null)
+        {
+            if (currentGladiator.XPToNextLevel <= 0)
+            {
+                xpText.text = "XP: MAX";
+            }
+            else
+            {
+                xpText.text = $"XP: {currentGladiator.CurrentXP}/{currentGladiator.XPToNextLevel}";
+            }
+        }
+    }
+
     private void UpdateEquipment()
     {
         if (weaponText != null)
@@ -285,7 +325,8 @@ public class GladiatorInfoWindow : MonoBehaviour
             WeaponData weapon = currentGladiator.EquippedWeapon;
             if (weapon != null)
             {
-                weaponText.text = $"Weapon: {weapon.weaponName} (+{weapon.baseDamage} Dmg, Range {weapon.attackRange})";
+                int range = currentGladiator.GetAttackRange();
+                weaponText.text = $"Weapon: {weapon.weaponName} ({weapon.weaponType}, +{weapon.baseDamage} Dmg, Range {range})";
             }
             else
             {

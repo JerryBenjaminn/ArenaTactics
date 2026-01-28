@@ -22,4 +22,10 @@ MonoBehaviour:
   baseDefense: 6
   baseMovementPoints: 3
   baseActionPoints: 1
+  hpGrowth: 10
+  strengthGrowth: 1
+  dexterityGrowth: 1
+  intelligenceGrowth: 1
+  defenseGrowth: 1
+  speedGrowth: 0
   traits: High damage and survivability. Excels in melee combat.

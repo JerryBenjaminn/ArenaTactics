@@ -16,6 +16,7 @@ MonoBehaviour:
   weaponType: 0
   damageType: 0
   baseDamage: 5
+  range: 1
   attackRange: 1
   requiresLineOfSight: 0
   actionPointCost: 1

@@ -29,5 +29,5 @@ MonoBehaviour:
   defense: 5
   movementPoints: 3
   actionPoints: 1
-  team: 1
+  team: 0
   startingWeapon: {fileID: 0}

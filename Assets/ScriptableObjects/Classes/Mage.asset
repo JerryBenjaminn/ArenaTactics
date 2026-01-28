@@ -22,4 +22,10 @@ MonoBehaviour:
   baseDefense: 2
   baseMovementPoints: 3
   baseActionPoints: 1
+  hpGrowth: 10
+  strengthGrowth: 1
+  dexterityGrowth: 1
+  intelligenceGrowth: 1
+  defenseGrowth: 1
+  speedGrowth: 0
   traits: High spell damage and spell slots, very fragile.

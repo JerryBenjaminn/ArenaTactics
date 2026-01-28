@@ -42,6 +42,7 @@ public class GridManager : MonoBehaviour
     /// Backing storage for all grid cells.
     /// </summary>
     private GridCell[,] grid;
+    private readonly Dictionary<GridCell, Material> defaultCellMaterials = new Dictionary<GridCell, Material>();
 
     /// <summary>
     /// Gets the current grid width (in cells).
@@ -110,6 +111,7 @@ public class GridManager : MonoBehaviour
         ClearExistingGrid();
 
         grid = new GridCell[gridWidth, gridHeight];
+        defaultCellMaterials.Clear();
 
         for (int x = 0; x < gridWidth; x++)
         {
@@ -368,7 +370,56 @@ public class GridManager : MonoBehaviour
         }
 
         cell.Initialize(gridPos, worldPos);
+        CacheDefaultMaterial(cell);
         return cell;
+    }
+
+    public void ClearAllCellHighlights()
+    {
+        if (grid == null || defaultCellMaterials.Count == 0)
+        {
+            return;
+        }
+
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log("GridManager: Clearing all cell highlights.");
+        }
+
+        foreach (KeyValuePair<GridCell, Material> kvp in defaultCellMaterials)
+        {
+            GridCell cell = kvp.Key;
+            Material originalMat = kvp.Value;
+            if (cell == null || originalMat == null)
+            {
+                continue;
+            }
+
+            Renderer renderer = cell.GetComponentInChildren<Renderer>();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = originalMat;
+            }
+        }
+    }
+
+    private void CacheDefaultMaterial(GridCell cell)
+    {
+        if (cell == null)
+        {
+            return;
+        }
+
+        Renderer renderer = cell.GetComponentInChildren<Renderer>();
+        if (renderer == null)
+        {
+            return;
+        }
+
+        if (!defaultCellMaterials.ContainsKey(cell))
+        {
+            defaultCellMaterials[cell] = renderer.sharedMaterial;
+        }
     }
 
     /// <summary>

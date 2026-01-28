@@ -22,4 +22,10 @@ MonoBehaviour:
   baseDefense: 3
   baseMovementPoints: 4
   baseActionPoints: 1
+  hpGrowth: 10
+  strengthGrowth: 1
+  dexterityGrowth: 1
+  intelligenceGrowth: 1
+  defenseGrowth: 1
+  speedGrowth: 0
   traits: High crit chance, extra movement, fragile.

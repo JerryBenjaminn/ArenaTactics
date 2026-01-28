@@ -41,6 +41,7 @@ public class PlayerInputController : MonoBehaviour
     private int lastMoveCost;
     private Coroutine autoEndRoutine;
     private readonly Dictionary<Gladiator, Material> highlightedTargets = new Dictionary<Gladiator, Material>();
+    private readonly Dictionary<GridCell, Material> highlightedAttackCells = new Dictionary<GridCell, Material>();
     private Vector3 rightClickStartPos;
     private const float MinRightClickDrag = 5f;
 
@@ -167,6 +168,11 @@ public class PlayerInputController : MonoBehaviour
             return;
         }
 
+        if (selectedGladiator != null && selectedGladiator != gladiator)
+        {
+            ClearSelection();
+        }
+
         selectedGladiator = gladiator;
         lastPosition = gladiator.CurrentGridPosition;
         lastMoveCost = 0;
@@ -187,6 +193,10 @@ public class PlayerInputController : MonoBehaviour
     public void ClearSelection()
     {
         ClearAllHighlights();
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log("PlayerInputController: Cleared selection and highlights.");
+        }
         selectedGladiator = null;
         hasMovedThisTurn = false;
         hasAttackedThisTurn = false;
@@ -375,6 +385,25 @@ public class PlayerInputController : MonoBehaviour
         List<Gladiator> attackableTargets = selectedGladiator.GetAttackableTargets();
         if (!attackableTargets.Contains(target))
         {
+            bool inRange;
+            bool hasLineOfSight;
+            selectedGladiator.CanAttackTarget(target, out inRange, out hasLineOfSight);
+            if (!inRange)
+            {
+                if (DebugSettings.VERBOSE_LOGGING)
+                {
+                    Debug.Log("PlayerInputController: Target is out of range.");
+                }
+            }
+            else if (!hasLineOfSight)
+            {
+                if (DebugSettings.VERBOSE_LOGGING)
+                {
+                    Debug.Log("PlayerInputController: Line of sight is blocked.");
+                }
+            }
+
+            StartCoroutine(FlashInvalidTarget(target));
             if (DebugSettings.VERBOSE_LOGGING)
             {
                 Debug.Log("PlayerInputController: Target is not attackable.");
@@ -387,7 +416,7 @@ public class PlayerInputController : MonoBehaviour
         int damage = CombatSystem.CalculateDamage(selectedGladiator, target, out didCrit, out didMiss);
         if (damage > 0)
         {
-            target.TakeDamage(damage);
+            target.TakeDamage(damage, selectedGladiator);
         }
         selectedGladiator.TrySpendAP(1);
         hasAttackedThisTurn = true;
@@ -436,6 +465,11 @@ public class PlayerInputController : MonoBehaviour
             return;
         }
 
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"PlayerInputController: Setting highlights for {selectedGladiator.name}.");
+        }
+
         ClearAllHighlights();
         selectedGladiator.HighlightMovementRange();
         HighlightAttackRange();
@@ -446,6 +480,34 @@ public class PlayerInputController : MonoBehaviour
         if (selectedGladiator == null)
         {
             return;
+        }
+
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log($"PlayerInputController: Setting attack highlights for {selectedGladiator.name}.");
+        }
+
+        List<Vector2Int> attackableCells = selectedGladiator.GetAttackableCells();
+        foreach (Vector2Int pos in attackableCells)
+        {
+            GridCell cell = GridManager.Instance != null ? GridManager.Instance.GetCellAtPosition(pos) : null;
+            if (cell == null)
+            {
+                continue;
+            }
+
+            Renderer renderer = cell.GetComponentInChildren<Renderer>();
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (!highlightedAttackCells.ContainsKey(cell))
+            {
+                highlightedAttackCells[cell] = renderer.sharedMaterial;
+            }
+
+            renderer.material.color = new Color(1f, 0.6f, 0.1f, 0.6f);
         }
 
         List<Gladiator> targets = selectedGladiator.GetAttackableTargets();
@@ -466,12 +528,30 @@ public class PlayerInputController : MonoBehaviour
         }
     }
 
-    private void ClearAllHighlights()
+    public void ClearAllHighlights()
     {
         if (selectedGladiator != null)
         {
             selectedGladiator.ClearHighlights();
         }
+
+        if (GridManager.Instance != null)
+        {
+            GridManager.Instance.ClearAllCellHighlights();
+        }
+
+        foreach (KeyValuePair<GridCell, Material> kvp in highlightedAttackCells)
+        {
+            GridCell cell = kvp.Key;
+            Material originalMat = kvp.Value;
+            Renderer renderer = cell != null ? cell.GetComponentInChildren<Renderer>() : null;
+            if (renderer != null && originalMat != null)
+            {
+                renderer.sharedMaterial = originalMat;
+            }
+        }
+
+        highlightedAttackCells.Clear();
 
         foreach (KeyValuePair<Gladiator, Material> kvp in highlightedTargets)
         {
@@ -485,6 +565,11 @@ public class PlayerInputController : MonoBehaviour
         }
 
         highlightedTargets.Clear();
+
+        if (DebugSettings.VERBOSE_LOGGING)
+        {
+            Debug.Log("PlayerInputController: Cleared attack cell and target highlights.");
+        }
     }
 
     /// <summary>
@@ -523,6 +608,29 @@ public class PlayerInputController : MonoBehaviour
 
         ShowMovementAndAttackRange();
         CheckAutoEndTurn();
+    }
+
+    private IEnumerator FlashInvalidTarget(Gladiator target)
+    {
+        if (target == null)
+        {
+            yield break;
+        }
+
+        Renderer renderer = target.GetComponentInChildren<Renderer>();
+        if (renderer == null)
+        {
+            yield break;
+        }
+
+        Material originalMat = renderer.sharedMaterial;
+        renderer.material.color = new Color(1f, 0.1f, 0.1f, 1f);
+        yield return new WaitForSeconds(0.15f);
+
+        if (renderer != null)
+        {
+            renderer.sharedMaterial = originalMat;
+        }
     }
 
     private void CheckAutoEndTurn()

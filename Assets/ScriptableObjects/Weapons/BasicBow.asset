@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b6a2f1d3c4e5f60789a0b1c2d3e4f5a6, type: 3}
-  m_Name: BasicSpear
+  m_Name: BasicBow
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.WeaponData
-  weaponName: Iron Spear
-  weaponType: 0
+  weaponName: Basic Bow
+  weaponType: 1
   damageType: 0
-  baseDamage: 4
-  range: 2
-  attackRange: 2
-  requiresLineOfSight: 0
+  baseDamage: 8
+  range: 6
+  attackRange: 6
+  requiresLineOfSight: 1
   actionPointCost: 1
-  scalingStat: 0
+  scalingStat: 1
   strengthBonus: 0
   dexterityBonus: 1
   intelligenceBonus: 0
