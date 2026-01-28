@@ -71,6 +71,13 @@ public class Gladiator : MonoBehaviour
 
     private const int MaxLevel = 10;
 
+    [Header("Spells")]
+    [SerializeField]
+    private List<SpellData> knownSpells = new List<SpellData>();
+
+    [SerializeField]
+    private int currentSpellSlots;
+
     /// <summary>
     /// Current hit points for this gladiator instance.
     /// </summary>
@@ -80,6 +87,7 @@ public class Gladiator : MonoBehaviour
     // Cached highlight data so we can restore tiles after highlighting.
     private readonly Dictionary<GridCell, Material> highlightedCells = new Dictionary<GridCell, Material>();
     private readonly Dictionary<Gladiator, int> damageContributors = new Dictionary<Gladiator, int>();
+    private readonly Dictionary<EffectType, ActiveEffect> activeEffects = new Dictionary<EffectType, ActiveEffect>();
 
     /// <summary>
     /// Gets this gladiator's data asset.
@@ -120,6 +128,21 @@ public class Gladiator : MonoBehaviour
     /// Gets the XP required to reach the next level.
     /// </summary>
     public int XPToNextLevel => currentLevel >= MaxLevel ? 0 : (currentLevel + 1) * 1000;
+
+    /// <summary>
+    /// Gets the current spell slots available.
+    /// </summary>
+    public int CurrentSpellSlots => currentSpellSlots;
+
+    /// <summary>
+    /// Gets the maximum spell slots available.
+    /// </summary>
+    public int MaxSpellSlots => GetSpellSlots();
+
+    /// <summary>
+    /// Gets the known spells for this gladiator.
+    /// </summary>
+    public List<SpellData> KnownSpells => knownSpells;
 
     /// <summary>
     /// Gets the maximum hit points for this gladiator instance.
@@ -183,6 +206,7 @@ public class Gladiator : MonoBehaviour
         currentLevel = 1;
         currentXP = 0;
         currentHP = data != null ? MaxHP : 0;
+        currentSpellSlots = MaxSpellSlots;
 
         if (data != null)
         {
@@ -195,6 +219,12 @@ public class Gladiator : MonoBehaviour
             else
             {
                 UnequipWeapon();
+            }
+
+            knownSpells.Clear();
+            if (data.startingSpells != null)
+            {
+                knownSpells.AddRange(data.startingSpells);
             }
         }
 
@@ -267,8 +297,13 @@ public class Gladiator : MonoBehaviour
             return;
         }
 
-        remainingMP = data.MovementPoints;
+        remainingMP = data.MovementPoints +
+                      GetEffectModifier(EffectType.MovementBuff) +
+                      GetEffectModifier(EffectType.MovementDebuff);
+        remainingMP = Mathf.Max(0, remainingMP);
         remainingAP = data.ActionPoints;
+        RefreshSpellSlots();
+        ProcessActiveEffects();
     }
 
     /// <summary>
@@ -306,6 +341,16 @@ public class Gladiator : MonoBehaviour
         {
             Die(source);
         }
+    }
+
+    public void Heal(int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        currentHP = Mathf.Clamp(currentHP + amount, 0, MaxHP);
     }
 
     /// <summary>
@@ -739,6 +784,8 @@ public class Gladiator : MonoBehaviour
     public int GetTotalStrength()
     {
         int strength = data != null ? data.Strength + GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.strengthGrowth : 0) : 0;
+        strength += GetEffectModifier(EffectType.StrengthBuff);
+        strength += GetEffectModifier(EffectType.StrengthDebuff);
         if (equippedWeapon != null)
         {
             strength += equippedWeapon.strengthBonus;
@@ -778,6 +825,8 @@ public class Gladiator : MonoBehaviour
     public int GetTotalDefense()
     {
         int defense = data != null ? data.Defense + GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.defenseGrowth : 0) : 0;
+        defense += GetEffectModifier(EffectType.DefenseBuff);
+        defense += GetEffectModifier(EffectType.DefenseDebuff);
         if (equippedWeapon != null)
         {
             defense += equippedWeapon.defenseBonus;
@@ -900,6 +949,16 @@ public class Gladiator : MonoBehaviour
         return slots;
     }
 
+    public float GetSpellPowerBonus()
+    {
+        if (equippedWeapon == null)
+        {
+            return 0f;
+        }
+
+        return equippedWeapon.spellPowerBonus;
+    }
+
     /// <summary>
     /// Returns the initiative value used for turn order.
     /// </summary>
@@ -911,6 +970,8 @@ public class Gladiator : MonoBehaviour
         }
 
         int speed = data.Speed + GetLevelGrowthValue(data.gladiatorClass != null ? data.gladiatorClass.speedGrowth : 0);
+        speed += GetEffectModifier(EffectType.SpeedBuff);
+        speed += GetEffectModifier(EffectType.SpeedDebuff);
         return speed + (GetTotalDexterity() / 2);
     }
 
@@ -1022,6 +1083,322 @@ public class Gladiator : MonoBehaviour
 
         int levelsGained = Mathf.Max(0, currentLevel - 1);
         return levelsGained * growthPerLevel;
+    }
+
+    public void RefreshSpellSlots()
+    {
+        currentSpellSlots = MaxSpellSlots;
+    }
+
+    public bool TrySpendSpellSlots(int amount)
+    {
+        if (amount <= 0)
+        {
+            return true;
+        }
+
+        if (currentSpellSlots < amount)
+        {
+            return false;
+        }
+
+        currentSpellSlots -= amount;
+        return true;
+    }
+
+    public bool HasActiveEffect(EffectType effectType)
+    {
+        return activeEffects.ContainsKey(effectType);
+    }
+
+    public bool IsStunned()
+    {
+        return HasActiveEffect(EffectType.Stun);
+    }
+
+    public void AddOrRefreshEffect(EffectType effectType, int value, int duration)
+    {
+        if (effectType == EffectType.None || duration <= 0)
+        {
+            return;
+        }
+
+        // Store duration + 1 so effects remain active for the current turn.
+        int turnsRemaining = duration + 1;
+
+        if (activeEffects.TryGetValue(effectType, out ActiveEffect existing))
+        {
+            if (IsDebuffEffect(effectType))
+            {
+                existing.value += value;
+            }
+            else if (effectType == EffectType.Stun)
+            {
+                existing.value = value;
+            }
+            else
+            {
+                existing.value = value;
+            }
+
+            existing.turnsRemaining = turnsRemaining;
+            activeEffects[effectType] = existing;
+            return;
+        }
+
+        activeEffects[effectType] = new ActiveEffect
+        {
+            value = value,
+            turnsRemaining = turnsRemaining
+        };
+    }
+
+    public void ProcessActiveEffects()
+    {
+        if (activeEffects.Count == 0)
+        {
+            return;
+        }
+
+        List<EffectType> expired = null;
+        List<EffectType> keys = new List<EffectType>(activeEffects.Keys);
+        foreach (EffectType key in keys)
+        {
+            ActiveEffect effect = activeEffects[key];
+            effect.turnsRemaining--;
+            if (effect.turnsRemaining <= 0)
+            {
+                if (expired == null)
+                {
+                    expired = new List<EffectType>();
+                }
+
+                expired.Add(key);
+            }
+            else
+            {
+                activeEffects[key] = effect;
+            }
+        }
+
+        if (expired != null)
+        {
+            foreach (EffectType effectType in expired)
+            {
+                activeEffects.Remove(effectType);
+            }
+        }
+    }
+
+    public bool CanCastSpell(SpellData spell, Gladiator target, out bool inRange, out bool hasLineOfSight)
+    {
+        inRange = false;
+        hasLineOfSight = true;
+
+        if (spell == null || target == null)
+        {
+            return false;
+        }
+
+        int distance = Mathf.Abs(currentGridPosition.x - target.currentGridPosition.x) +
+                       Mathf.Abs(currentGridPosition.y - target.currentGridPosition.y);
+        inRange = distance <= spell.range;
+
+        if (spell.requiresLineOfSight)
+        {
+            if (gridManager == null)
+            {
+                gridManager = GridManager.Instance;
+            }
+
+            hasLineOfSight = CombatSystem.HasLineOfSight(currentGridPosition, target.currentGridPosition, gridManager);
+        }
+
+        return inRange && hasLineOfSight;
+    }
+
+    public bool CastSpell(SpellData spell, Gladiator target)
+    {
+        if (spell == null || target == null || data == null)
+        {
+            return false;
+        }
+
+        bool isEnemy = target.Data != null && target.Data.team != data.team;
+        if (spell.spellType == SpellType.Buff && isEnemy)
+        {
+            return false;
+        }
+
+        if ((spell.spellType == SpellType.Damage || spell.spellType == SpellType.Debuff) && !isEnemy)
+        {
+            return false;
+        }
+
+        if (remainingAP < spell.apCost || currentSpellSlots < spell.spellSlotCost)
+        {
+            return false;
+        }
+
+        bool inRange;
+        bool hasLineOfSight;
+        if (!CanCastSpell(spell, target, out inRange, out hasLineOfSight))
+        {
+            return false;
+        }
+
+        if (spell.spellType == SpellType.Damage)
+        {
+            CombatSystem.CastDamageSpell(this, target, spell);
+        }
+        else if (spell.spellType == SpellType.Debuff)
+        {
+            CombatSystem.ApplyDebuff(this, target, spell);
+        }
+        else if (spell.spellType == SpellType.Buff)
+        {
+            CombatSystem.ApplyBuff(this, target, spell);
+        }
+
+        remainingAP = Mathf.Max(0, remainingAP - spell.apCost);
+        TrySpendSpellSlots(spell.spellSlotCost);
+        return true;
+    }
+
+    public bool CastSpellAOE(SpellData spell, GridCell targetCell)
+    {
+        if (spell == null || targetCell == null || data == null)
+        {
+            return false;
+        }
+
+        if (remainingAP < spell.apCost || currentSpellSlots < spell.spellSlotCost)
+        {
+            return false;
+        }
+
+        int distance = Mathf.Abs(currentGridPosition.x - targetCell.GridPosition.x) +
+                       Mathf.Abs(currentGridPosition.y - targetCell.GridPosition.y);
+        if (distance > spell.range)
+        {
+            return false;
+        }
+
+        if (spell.requiresLineOfSight)
+        {
+            if (gridManager == null)
+            {
+                gridManager = GridManager.Instance;
+            }
+
+            if (gridManager == null)
+            {
+                return false;
+            }
+
+            if (!CombatSystem.HasLineOfSight(currentGridPosition, targetCell.GridPosition, gridManager))
+            {
+                return false;
+            }
+        }
+
+        CombatSystem.CastAOESpell(this, targetCell, spell, BattleManager.Instance != null
+            ? BattleManager.Instance.AllGladiators
+            : new List<Gladiator>());
+
+        remainingAP = Mathf.Max(0, remainingAP - spell.apCost);
+        TrySpendSpellSlots(spell.spellSlotCost);
+        return true;
+    }
+
+    public bool HasValidSpellTargets(SpellData spell)
+    {
+        if (spell == null || BattleManager.Instance == null)
+        {
+            return false;
+        }
+
+        if (spell.spellType == SpellType.AOE)
+        {
+            return spell.range > 0;
+        }
+
+        foreach (Gladiator gladiator in BattleManager.Instance.AllGladiators)
+        {
+            if (gladiator == null || gladiator.Data == null)
+            {
+                continue;
+            }
+
+            bool isEnemy = gladiator.Data.team != data.team;
+            bool shouldTargetEnemy = spell.spellType == SpellType.Damage || spell.spellType == SpellType.Debuff;
+
+            if (shouldTargetEnemy && !isEnemy)
+            {
+                continue;
+            }
+
+            if (!shouldTargetEnemy && isEnemy)
+            {
+                continue;
+            }
+
+            bool inRange;
+            bool hasLineOfSight;
+            if (CanCastSpell(spell, gladiator, out inRange, out hasLineOfSight))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private int GetEffectModifier(EffectType effectType)
+    {
+        if (activeEffects.TryGetValue(effectType, out ActiveEffect effect))
+        {
+            return effect.value;
+        }
+
+        return 0;
+    }
+
+    private static bool IsDebuffEffect(EffectType effectType)
+    {
+        return effectType == EffectType.StrengthDebuff ||
+               effectType == EffectType.DefenseDebuff ||
+               effectType == EffectType.SpeedDebuff ||
+               effectType == EffectType.MovementDebuff;
+    }
+
+    private struct ActiveEffect
+    {
+        public int value;
+        public int turnsRemaining;
+    }
+
+    public void PlaySpellEffect(Color color, float duration = 0.2f)
+    {
+        StartCoroutine(FlashColor(color, duration));
+    }
+
+    private IEnumerator FlashColor(Color color, float duration)
+    {
+        Renderer renderer = GetComponentInChildren<Renderer>();
+        if (renderer == null)
+        {
+            yield break;
+        }
+
+        Material original = renderer.sharedMaterial;
+        renderer.material.color = color;
+        yield return new WaitForSeconds(duration);
+
+        if (renderer != null)
+        {
+            renderer.sharedMaterial = original;
+        }
     }
 
     /// <summary>

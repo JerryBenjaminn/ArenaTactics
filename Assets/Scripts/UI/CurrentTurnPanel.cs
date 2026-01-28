@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ArenaTactics.Data;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,6 +16,17 @@ public class CurrentTurnPanel : MonoBehaviour
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI mpText;
     [SerializeField] private TextMeshProUGUI apText;
+    [SerializeField] private TextMeshProUGUI spellSlotsText;
+
+    [System.Serializable]
+    private class SpellButtonUI
+    {
+        public Button button;
+        public TextMeshProUGUI label;
+    }
+
+    [Header("Spells")]
+    [SerializeField] private List<SpellButtonUI> spellButtons = new List<SpellButtonUI>();
 
     [Header("Action Buttons")]
     [SerializeField] private Button undoButton;
@@ -106,6 +118,13 @@ public class CurrentTurnPanel : MonoBehaviour
             apText.text = $"AP: {gladiator.RemainingAP}/{gladiator.MaxAP}";
         }
 
+        if (spellSlotsText != null)
+        {
+            spellSlotsText.text = $"Spells: {gladiator.CurrentSpellSlots}/{gladiator.MaxSpellSlots}";
+        }
+
+        UpdateSpellButtons(gladiator);
+
         UpdateButtonStates(gladiator);
     }
 
@@ -143,6 +162,55 @@ public class CurrentTurnPanel : MonoBehaviour
         if (PlayerInputController.Instance != null)
         {
             PlayerInputController.Instance.EndTurn();
+        }
+    }
+
+    private void UpdateSpellButtons(Gladiator gladiator)
+    {
+        if (spellButtons == null || spellButtons.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < spellButtons.Count; i++)
+        {
+            SpellButtonUI entry = spellButtons[i];
+            if (entry == null || entry.button == null)
+            {
+                continue;
+            }
+
+            if (gladiator.KnownSpells == null || i >= gladiator.KnownSpells.Count)
+            {
+                entry.button.interactable = false;
+                if (entry.label != null)
+                {
+                    entry.label.text = "-";
+                }
+                continue;
+            }
+
+            SpellData spell = gladiator.KnownSpells[i];
+            if (entry.label != null)
+            {
+                entry.label.text = $"{i + 1}. {spell.spellName} (AP {spell.apCost}, S {spell.spellSlotCost})";
+            }
+
+            bool canCast = gladiator.RemainingAP >= spell.apCost &&
+                           gladiator.CurrentSpellSlots >= spell.spellSlotCost &&
+                           gladiator.HasValidSpellTargets(spell) &&
+                           gladiator.IsPlayerControlled;
+            entry.button.interactable = canCast;
+
+            int capturedIndex = i;
+            entry.button.onClick.RemoveAllListeners();
+            entry.button.onClick.AddListener(() =>
+            {
+                if (PlayerInputController.Instance != null)
+                {
+                    PlayerInputController.Instance.SelectSpellIndex(capturedIndex);
+                }
+            });
         }
     }
 }

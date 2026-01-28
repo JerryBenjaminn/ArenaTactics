@@ -20,6 +20,13 @@ public static class AIController
 
         yield return new WaitForSeconds(0.5f);
 
+        if (TryCastBestSpell(aiGladiator))
+        {
+            yield return new WaitForSeconds(0.2f);
+            EndAITurn();
+            yield break;
+        }
+
         List<Gladiator> attackableTargets = aiGladiator.GetAttackableTargets();
         if (attackableTargets.Count > 0 && aiGladiator.RemainingAP > 0)
         {
@@ -50,6 +57,161 @@ public static class AIController
 
         yield return new WaitForSeconds(0.3f);
         EndAITurn();
+    }
+
+    private static bool TryCastBestSpell(Gladiator caster)
+    {
+        if (caster == null || caster.KnownSpells == null || caster.KnownSpells.Count == 0)
+        {
+            return false;
+        }
+
+        if (caster.RemainingAP <= 0 || caster.CurrentSpellSlots <= 0)
+        {
+            return false;
+        }
+
+        List<Gladiator> allGladiators = BattleManager.Instance != null
+            ? BattleManager.Instance.AllGladiators
+            : null;
+        if (allGladiators == null)
+        {
+            return false;
+        }
+
+        SpellData aoeSpell = null;
+        Gladiator bestAoeTarget = null;
+        int bestAoeCount = 1;
+
+        foreach (SpellData spell in caster.KnownSpells)
+        {
+            if (spell == null)
+            {
+                continue;
+            }
+
+            if (caster.RemainingAP < spell.apCost || caster.CurrentSpellSlots < spell.spellSlotCost)
+            {
+                continue;
+            }
+
+            if (spell.spellType == SpellType.AOE && spell.aoeRadius > 0)
+            {
+                foreach (Gladiator enemy in allGladiators)
+                {
+                    if (enemy == null || enemy.Data == null || enemy.Data.team == caster.Data.team)
+                    {
+                        continue;
+                    }
+
+                    int distance = GetGridDistance(caster.CurrentGridPosition, enemy.CurrentGridPosition);
+                    if (distance > spell.range)
+                    {
+                        continue;
+                    }
+
+                    if (spell.requiresLineOfSight &&
+                        !CombatSystem.HasLineOfSight(caster.CurrentGridPosition, enemy.CurrentGridPosition, GridManager.Instance))
+                    {
+                        continue;
+                    }
+
+                    int count = CountEnemiesInRadius(allGladiators, caster, enemy.CurrentGridPosition, spell.aoeRadius);
+                    if (count > bestAoeCount)
+                    {
+                        bestAoeCount = count;
+                        aoeSpell = spell;
+                        bestAoeTarget = enemy;
+                    }
+                }
+            }
+        }
+
+        if (aoeSpell != null && bestAoeTarget != null && GridManager.Instance != null)
+        {
+            GridCell cell = GridManager.Instance.GetCellAtPosition(bestAoeTarget.CurrentGridPosition);
+            if (cell != null && caster.CastSpellAOE(aoeSpell, cell))
+            {
+                return true;
+            }
+        }
+
+        foreach (SpellData spell in caster.KnownSpells)
+        {
+            if (spell == null)
+            {
+                continue;
+            }
+
+            if (caster.RemainingAP < spell.apCost || caster.CurrentSpellSlots < spell.spellSlotCost)
+            {
+                continue;
+            }
+
+            if (spell.spellType == SpellType.Buff)
+            {
+                Gladiator target = SelectBuffTarget(allGladiators, caster);
+                if (target != null && caster.CastSpell(spell, target))
+                {
+                    return true;
+                }
+            }
+            else if (spell.spellType == SpellType.Damage || spell.spellType == SpellType.Debuff)
+            {
+                List<Gladiator> enemies = allGladiators
+                    .FindAll(g => g != null && g.Data != null && g.Data.team != caster.Data.team);
+                Gladiator target = SelectAttackTarget(enemies, caster);
+                if (target != null && caster.CastSpell(spell, target))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static Gladiator SelectBuffTarget(List<Gladiator> allGladiators, Gladiator caster)
+    {
+        Gladiator best = caster;
+        float lowestHpPercent = caster.MaxHP > 0 ? caster.CurrentHP / (float)caster.MaxHP : 1f;
+
+        foreach (Gladiator gladiator in allGladiators)
+        {
+            if (gladiator == null || gladiator.Data == null || gladiator.Data.team != caster.Data.team)
+            {
+                continue;
+            }
+
+            float hpPercent = gladiator.MaxHP > 0 ? gladiator.CurrentHP / (float)gladiator.MaxHP : 1f;
+            if (hpPercent < lowestHpPercent)
+            {
+                lowestHpPercent = hpPercent;
+                best = gladiator;
+            }
+        }
+
+        return best;
+    }
+
+    private static int CountEnemiesInRadius(List<Gladiator> allGladiators, Gladiator caster, Vector2Int center, int radius)
+    {
+        int count = 0;
+        foreach (Gladiator gladiator in allGladiators)
+        {
+            if (gladiator == null || gladiator.Data == null || gladiator.Data.team == caster.Data.team)
+            {
+                continue;
+            }
+
+            int distance = GetGridDistance(gladiator.CurrentGridPosition, center);
+            if (distance <= radius)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private static void EndAITurn()

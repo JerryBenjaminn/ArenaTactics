@@ -255,6 +255,16 @@ public class BattleManager : MonoBehaviour
         turnPhase = TurnPhase.WaitingForInput;
         SetBattleState(GetStateForGladiator(currentGladiator));
 
+        if (currentGladiator.IsStunned())
+        {
+            if (DebugSettings.LOG_TURNS)
+            {
+                Debug.Log($"BattleManager: {currentGladiator.name} is stunned and skips the turn.");
+            }
+            EndTurn();
+            return;
+        }
+
         string name = currentGladiator.Data != null ? currentGladiator.Data.gladiatorName : currentGladiator.name;
         int speed = currentGladiator.Data != null ? currentGladiator.Data.Speed : 0;
         string team = currentGladiator.Data != null ? currentGladiator.Data.team.ToString() : "Unknown";

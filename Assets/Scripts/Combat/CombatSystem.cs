@@ -1,3 +1,6 @@
+using System.Collections;
+using System.Collections.Generic;
+using ArenaTactics.Data;
 using UnityEngine;
 
 /// <summary>
@@ -129,5 +132,173 @@ public static class CombatSystem
         }
 
         return true;
+    }
+
+    public static int CastDamageSpell(Gladiator caster, Gladiator target, SpellData spell)
+    {
+        if (caster == null || target == null || spell == null)
+        {
+            return 0;
+        }
+
+        int scaling = GetSpellScalingValue(caster, spell);
+        int bonus = Mathf.RoundToInt(spell.basePower * caster.GetSpellPowerBonus());
+        int damage = spell.basePower + scaling + bonus;
+
+        target.TakeDamage(Mathf.Max(0, damage), caster);
+        target.PlaySpellEffect(new Color(1f, 0.4f, 0.1f, 1f));
+
+        if (DebugSettings.LOG_COMBAT)
+        {
+            Debug.Log($"CombatSystem: {caster.name} cast {spell.spellName} on {target.name} for {damage} damage.");
+        }
+
+        return damage;
+    }
+
+    public static void CastAOESpell(Gladiator caster, GridCell targetCell, SpellData spell, List<Gladiator> allGladiators)
+    {
+        if (caster == null || targetCell == null || spell == null || allGladiators == null)
+        {
+            return;
+        }
+
+        int scaling = GetSpellScalingValue(caster, spell);
+        int bonus = Mathf.RoundToInt(spell.basePower * caster.GetSpellPowerBonus());
+        int damage = spell.basePower + scaling + bonus;
+
+        foreach (Gladiator gladiator in allGladiators)
+        {
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            int distance = Mathf.Abs(gladiator.CurrentGridPosition.x - targetCell.GridPosition.x) +
+                           Mathf.Abs(gladiator.CurrentGridPosition.y - targetCell.GridPosition.y);
+            if (distance > spell.aoeRadius)
+            {
+                continue;
+            }
+
+            if (spell.spellType == SpellType.AOE && spell.basePower > 0)
+            {
+                gladiator.TakeDamage(Mathf.Max(0, damage), caster);
+                gladiator.PlaySpellEffect(new Color(1f, 0.4f, 0.1f, 1f));
+            }
+
+            if (spell.secondaryEffectType != EffectType.None)
+            {
+                ApplySecondaryEffect(gladiator, spell);
+            }
+        }
+
+        if (DebugSettings.LOG_COMBAT)
+        {
+            Debug.Log($"CombatSystem: {caster.name} cast AOE {spell.spellName} at {targetCell.GridPosition}.");
+        }
+    }
+
+    public static void ApplyBuff(Gladiator caster, Gladiator target, SpellData spell)
+    {
+        if (target == null || spell == null)
+        {
+            return;
+        }
+
+        if (spell.effectType == EffectType.Heal)
+        {
+            int scaling = GetSpellScalingValue(caster, spell);
+            int bonus = Mathf.RoundToInt(spell.basePower * caster.GetSpellPowerBonus());
+            int heal = spell.basePower + scaling + bonus;
+
+            target.Heal(heal);
+            target.PlaySpellEffect(new Color(0.2f, 1f, 0.4f, 1f));
+            return;
+        }
+
+        if (spell.effectType != EffectType.None)
+        {
+            target.AddOrRefreshEffect(spell.effectType, spell.effectValue, spell.duration);
+            target.PlaySpellEffect(new Color(0.4f, 0.8f, 1f, 1f));
+        }
+
+        if (spell.secondaryEffectType != EffectType.None)
+        {
+            target.AddOrRefreshEffect(spell.secondaryEffectType, spell.secondaryEffectValue, spell.duration);
+            target.PlaySpellEffect(new Color(0.4f, 0.8f, 1f, 1f));
+        }
+    }
+
+    public static void ApplyDebuff(Gladiator caster, Gladiator target, SpellData spell)
+    {
+        if (target == null || spell == null)
+        {
+            return;
+        }
+
+        if (target.HasActiveEffect(EffectType.ImmunityBuff))
+        {
+            return;
+        }
+
+        if (spell.effectType != EffectType.None)
+        {
+            target.AddOrRefreshEffect(spell.effectType, spell.effectValue, spell.duration);
+            target.PlaySpellEffect(new Color(0.8f, 0.3f, 0.8f, 1f));
+        }
+
+        if (spell.secondaryEffectType != EffectType.None)
+        {
+            target.AddOrRefreshEffect(spell.secondaryEffectType, spell.secondaryEffectValue, spell.duration);
+            target.PlaySpellEffect(new Color(0.8f, 0.3f, 0.8f, 1f));
+        }
+    }
+
+    private static void ApplySecondaryEffect(Gladiator target, SpellData spell)
+    {
+        if (spell.secondaryEffectType == EffectType.None)
+        {
+            return;
+        }
+
+        if (spell.secondaryEffectType == EffectType.Heal)
+        {
+            target.Heal(spell.secondaryEffectValue);
+            return;
+        }
+
+        if (spell.secondaryEffectType == EffectType.StrengthDebuff ||
+            spell.secondaryEffectType == EffectType.DefenseDebuff ||
+            spell.secondaryEffectType == EffectType.SpeedDebuff ||
+            spell.secondaryEffectType == EffectType.MovementDebuff ||
+            spell.secondaryEffectType == EffectType.Stun)
+        {
+            if (!target.HasActiveEffect(EffectType.ImmunityBuff))
+            {
+                target.AddOrRefreshEffect(spell.secondaryEffectType, spell.secondaryEffectValue, spell.duration);
+            }
+            return;
+        }
+
+        target.AddOrRefreshEffect(spell.secondaryEffectType, spell.secondaryEffectValue, spell.duration);
+    }
+
+    private static int GetSpellScalingValue(Gladiator caster, SpellData spell)
+    {
+        if (caster == null || spell == null)
+        {
+            return 0;
+        }
+
+        switch (spell.scalingStat)
+        {
+            case SpellScalingStat.Strength:
+                return caster.GetTotalStrength();
+            case SpellScalingStat.Dexterity:
+                return caster.GetTotalDexterity();
+            default:
+                return caster.GetTotalIntelligence();
+        }
     }
 }

@@ -260,7 +260,7 @@ public class GladiatorInfoWindow : MonoBehaviour
 
         if (spellSlotsText != null)
         {
-            spellSlotsText.text = $"Spell Slots: {currentGladiator.GetSpellSlots()}";
+            spellSlotsText.text = $"Spell Slots: {currentGladiator.CurrentSpellSlots}/{currentGladiator.GetSpellSlots()}";
         }
 
         UpdateEquipment();

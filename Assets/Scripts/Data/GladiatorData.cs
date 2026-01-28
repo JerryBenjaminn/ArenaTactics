@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ArenaTactics.Data
@@ -57,6 +58,9 @@ namespace ArenaTactics.Data
 
         [Header("Starting Equipment")]
         public WeaponData startingWeapon;
+
+        [Header("Starting Spells")]
+        public List<SpellData> startingSpells = new List<SpellData>();
     }
 }
 

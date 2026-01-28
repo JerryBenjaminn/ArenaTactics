@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using ArenaTactics.Data;
 using UnityEngine;
 
 /// <summary>
@@ -42,8 +43,10 @@ public class PlayerInputController : MonoBehaviour
     private Coroutine autoEndRoutine;
     private readonly Dictionary<Gladiator, Material> highlightedTargets = new Dictionary<Gladiator, Material>();
     private readonly Dictionary<GridCell, Material> highlightedAttackCells = new Dictionary<GridCell, Material>();
+    private readonly Dictionary<GridCell, Material> highlightedSpellCells = new Dictionary<GridCell, Material>();
     private Vector3 rightClickStartPos;
     private const float MinRightClickDrag = 5f;
+    private int selectedSpellIndex = -1;
 
     /// <summary>
     /// Gets the currently selected gladiator.
@@ -151,6 +154,8 @@ public class PlayerInputController : MonoBehaviour
             return;
         }
 
+        HandleSpellHotkeys();
+
         if (Input.GetMouseButtonDown(0))
         {
             HandleMouseClick();
@@ -222,6 +227,7 @@ public class PlayerInputController : MonoBehaviour
         hasMovedThisTurn = false;
         hasAttackedThisTurn = false;
         lastMoveCost = 0;
+        selectedSpellIndex = -1;
         StopAutoEndRoutine();
     }
 
@@ -235,6 +241,14 @@ public class PlayerInputController : MonoBehaviour
         if (mainCamera == null)
         {
             return;
+        }
+
+        if (selectedSpellIndex >= 0)
+        {
+            if (TryCastSelectedSpell())
+            {
+                return;
+            }
         }
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -494,6 +508,7 @@ public class PlayerInputController : MonoBehaviour
         ClearAllHighlights();
         selectedGladiator.HighlightMovementRange();
         HighlightAttackRange();
+        HighlightSpellRange();
     }
 
     private void HighlightAttackRange()
@@ -549,6 +564,38 @@ public class PlayerInputController : MonoBehaviour
         }
     }
 
+    private void HighlightSpellRange()
+    {
+        SpellData spell = GetSelectedSpell();
+        if (selectedGladiator == null || spell == null || GridManager.Instance == null)
+        {
+            return;
+        }
+
+        List<Vector2Int> cells = GetSpellTargetCells(spell);
+        foreach (Vector2Int pos in cells)
+        {
+            GridCell cell = GridManager.Instance.GetCellAtPosition(pos);
+            if (cell == null)
+            {
+                continue;
+            }
+
+            Renderer renderer = cell.GetComponentInChildren<Renderer>();
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (!highlightedSpellCells.ContainsKey(cell))
+            {
+                highlightedSpellCells[cell] = renderer.sharedMaterial;
+            }
+
+            renderer.material.color = new Color(0.4f, 0.6f, 1f, 0.6f);
+        }
+    }
+
     public void ClearAllHighlights()
     {
         if (selectedGladiator != null)
@@ -560,6 +607,19 @@ public class PlayerInputController : MonoBehaviour
         {
             GridManager.Instance.ClearAllCellHighlights();
         }
+
+        foreach (KeyValuePair<GridCell, Material> kvp in highlightedSpellCells)
+        {
+            GridCell cell = kvp.Key;
+            Material originalMat = kvp.Value;
+            Renderer renderer = cell != null ? cell.GetComponentInChildren<Renderer>() : null;
+            if (renderer != null && originalMat != null)
+            {
+                renderer.sharedMaterial = originalMat;
+            }
+        }
+
+        highlightedSpellCells.Clear();
 
         foreach (KeyValuePair<GridCell, Material> kvp in highlightedAttackCells)
         {
@@ -591,6 +651,141 @@ public class PlayerInputController : MonoBehaviour
         {
             Debug.Log("PlayerInputController: Cleared attack cell and target highlights.");
         }
+    }
+
+    private void HandleSpellHotkeys()
+    {
+        if (selectedGladiator == null || selectedGladiator.KnownSpells == null)
+        {
+            selectedSpellIndex = -1;
+            return;
+        }
+
+        for (int i = 0; i < 9; i++)
+        {
+            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+            {
+                SelectSpellIndex(i);
+                break;
+            }
+        }
+    }
+
+    public void SelectSpellIndex(int index)
+    {
+        if (selectedGladiator == null || selectedGladiator.KnownSpells == null)
+        {
+            selectedSpellIndex = -1;
+            return;
+        }
+
+        if (index < 0 || index >= selectedGladiator.KnownSpells.Count)
+        {
+            selectedSpellIndex = -1;
+            ShowMovementAndAttackRange();
+            return;
+        }
+
+        selectedSpellIndex = index;
+        ShowMovementAndAttackRange();
+    }
+
+    private SpellData GetSelectedSpell()
+    {
+        if (selectedGladiator == null || selectedGladiator.KnownSpells == null)
+        {
+            return null;
+        }
+
+        if (selectedSpellIndex < 0 || selectedSpellIndex >= selectedGladiator.KnownSpells.Count)
+        {
+            return null;
+        }
+
+        return selectedGladiator.KnownSpells[selectedSpellIndex];
+    }
+
+    private List<Vector2Int> GetSpellTargetCells(SpellData spell)
+    {
+        var cells = new List<Vector2Int>();
+
+        if (selectedGladiator == null || spell == null || GridManager.Instance == null)
+        {
+            return cells;
+        }
+
+        Vector2Int origin = selectedGladiator.CurrentGridPosition;
+        int range = spell.range;
+
+        for (int x = 0; x < GridManager.Instance.GridWidth; x++)
+        {
+            for (int y = 0; y < GridManager.Instance.GridHeight; y++)
+            {
+                Vector2Int pos = new Vector2Int(x, y);
+                int distance = Mathf.Abs(pos.x - origin.x) + Mathf.Abs(pos.y - origin.y);
+                if (distance > range)
+                {
+                    continue;
+                }
+
+                if (spell.requiresLineOfSight &&
+                    !CombatSystem.HasLineOfSight(origin, pos, GridManager.Instance))
+                {
+                    continue;
+                }
+
+                cells.Add(pos);
+            }
+        }
+
+        return cells;
+    }
+
+    private bool TryCastSelectedSpell()
+    {
+        SpellData spell = GetSelectedSpell();
+        if (selectedGladiator == null || spell == null)
+        {
+            return false;
+        }
+
+        if (selectedGladiator.RemainingAP < spell.apCost ||
+            selectedGladiator.CurrentSpellSlots < spell.spellSlotCost)
+        {
+            return false;
+        }
+
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        if (spell.spellType == SpellType.AOE && spell.aoeRadius > 0)
+        {
+            if (Physics.Raycast(ray, out RaycastHit hitInfo, 100f, gridLayer))
+            {
+                GridCell cell = hitInfo.collider.GetComponentInParent<GridCell>();
+                if (cell != null && selectedGladiator.CastSpellAOE(spell, cell))
+                {
+                    selectedSpellIndex = -1;
+                    ClearAllHighlights();
+                    EndTurn();
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (Physics.Raycast(ray, out RaycastHit targetHit, 100f))
+        {
+            Gladiator target = targetHit.collider.GetComponentInParent<Gladiator>();
+            if (target != null && selectedGladiator.CastSpell(spell, target))
+            {
+                selectedSpellIndex = -1;
+                ClearAllHighlights();
+                EndTurn();
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
