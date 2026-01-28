@@ -174,7 +174,7 @@ public class BattleManager : MonoBehaviour
                 }
 
                 int initiative = gladiator.GetInitiative();
-                Debug.Log($"  [{i}] {gladiator.Data.gladiatorName}: {initiative} (Speed {gladiator.Data.speed} + DEX {gladiator.Data.dexterity}/2)");
+                Debug.Log($"  [{i}] {gladiator.Data.gladiatorName}: {initiative} (Speed {gladiator.Data.Speed} + DEX {gladiator.Data.Dexterity}/2)");
             }
         }
     }
@@ -249,7 +249,7 @@ public class BattleManager : MonoBehaviour
         SetBattleState(GetStateForGladiator(currentGladiator));
 
         string name = currentGladiator.Data != null ? currentGladiator.Data.gladiatorName : currentGladiator.name;
-        int speed = currentGladiator.Data != null ? currentGladiator.Data.speed : 0;
+        int speed = currentGladiator.Data != null ? currentGladiator.Data.Speed : 0;
         string team = currentGladiator.Data != null ? currentGladiator.Data.team.ToString() : "Unknown";
         if (DebugSettings.LOG_TURNS)
         {

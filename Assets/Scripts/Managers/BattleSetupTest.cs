@@ -15,12 +15,37 @@ public class BattleSetupTest : MonoBehaviour
     [SerializeField]
     private GameObject enemyGladiatorPrefab;
 
-    [Header("Test Data")]
+    [Header("Player Class Data")]
     [SerializeField]
-    private GladiatorData testWarriorData;
+    private GladiatorData playerWarriorData;
 
     [SerializeField]
-    private GladiatorData testEnemyData;
+    private GladiatorData playerRogueData;
+
+    [SerializeField]
+    private GladiatorData playerArcherData;
+
+    [SerializeField]
+    private GladiatorData playerMageData;
+
+    [SerializeField]
+    private GladiatorData playerTankData;
+
+    [Header("Enemy Class Data")]
+    [SerializeField]
+    private GladiatorData enemyWarriorData;
+
+    [SerializeField]
+    private GladiatorData enemyRogueData;
+
+    [SerializeField]
+    private GladiatorData enemyArcherData;
+
+    [SerializeField]
+    private GladiatorData enemyMageData;
+
+    [SerializeField]
+    private GladiatorData enemyTankData;
 
     [Header("Test Weapons")]
     [SerializeField]
@@ -59,36 +84,45 @@ public class BattleSetupTest : MonoBehaviour
             return;
         }
 
-        if (testWarriorData == null || testEnemyData == null)
+        if (playerWarriorData == null || playerRogueData == null || playerArcherData == null ||
+            playerMageData == null || playerTankData == null ||
+            enemyWarriorData == null || enemyRogueData == null || enemyArcherData == null ||
+            enemyMageData == null || enemyTankData == null)
         {
-            Debug.LogError("BattleSetupTest: GladiatorData assets are not assigned.");
+            Debug.LogError("BattleSetupTest: One or more GladiatorData assets are not assigned.");
             return;
         }
 
         // Player gladiators (initially placed in deployment zone).
-        Gladiator playerOne = SpawnGladiator(playerGladiatorPrefab, testWarriorData, new Vector2Int(0, 0), true, true);
-        Gladiator playerTwo = SpawnGladiator(playerGladiatorPrefab, testWarriorData, new Vector2Int(1, 0), true, true);
+        Gladiator playerWarrior = SpawnGladiator(playerGladiatorPrefab, playerWarriorData, new Vector2Int(0, 0), true, true);
+        Gladiator playerRogue = SpawnGladiator(playerGladiatorPrefab, playerRogueData, new Vector2Int(1, 0), true, true);
+        SpawnGladiator(playerGladiatorPrefab, playerArcherData, new Vector2Int(2, 0), true, true);
+        SpawnGladiator(playerGladiatorPrefab, playerMageData, new Vector2Int(3, 0), true, true);
+        SpawnGladiator(playerGladiatorPrefab, playerTankData, new Vector2Int(4, 0), true, true);
 
         // Enemy gladiators (spawned off-grid; auto-deployed by DeploymentManager).
-        SpawnGladiator(enemyGladiatorPrefab, testEnemyData, new Vector2Int(0, 9), false, false);
-        SpawnGladiator(enemyGladiatorPrefab, testEnemyData, new Vector2Int(1, 9), false, false);
+        SpawnGladiator(enemyGladiatorPrefab, enemyWarriorData, new Vector2Int(0, 9), false, false);
+        SpawnGladiator(enemyGladiatorPrefab, enemyRogueData, new Vector2Int(1, 9), false, false);
+        SpawnGladiator(enemyGladiatorPrefab, enemyArcherData, new Vector2Int(2, 9), false, false);
+        SpawnGladiator(enemyGladiatorPrefab, enemyMageData, new Vector2Int(3, 9), false, false);
+        SpawnGladiator(enemyGladiatorPrefab, enemyTankData, new Vector2Int(4, 9), false, false);
 
-        EquipTestWeapons(playerOne, playerTwo);
+        EquipTestWeapons(playerWarrior, playerRogue);
         Debug.Log($"BattleSetupTest: Spawned {spawnedGladiators.Count} gladiators.");
     }
 
-    private void EquipTestWeapons(Gladiator playerOne, Gladiator playerTwo)
+    private void EquipTestWeapons(Gladiator playerWarrior, Gladiator playerRogue)
     {
-        if (playerOne != null && basicSword != null)
+        if (playerWarrior != null && basicSword != null)
         {
-            playerOne.EquipWeapon(basicSword);
-            Debug.Log($"BattleSetupTest: Equipped {basicSword.weaponName} on {playerOne.name}.");
+            playerWarrior.EquipWeapon(basicSword);
+            Debug.Log($"BattleSetupTest: Equipped {basicSword.weaponName} on {playerWarrior.name}.");
         }
 
-        if (playerTwo != null && basicSpear != null)
+        if (playerRogue != null && basicSpear != null)
         {
-            playerTwo.EquipWeapon(basicSpear);
-            Debug.Log($"BattleSetupTest: Equipped {basicSpear.weaponName} on {playerTwo.name}.");
+            playerRogue.EquipWeapon(basicSpear);
+            Debug.Log($"BattleSetupTest: Equipped {basicSpear.weaponName} on {playerRogue.name}.");
         }
     }
 

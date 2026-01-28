@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 196b98e1502d3584ebb89450405f67f3, type: 3}
-  m_Name: TestWarrior
+  m_Name: TestMage
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorData
-  gladiatorName: Grimgor
-  gladiatorClass: {fileID: 11400000, guid: a1b2c3d4e5f60123456789abcdeff001, type: 2}
+  gladiatorName: Albus
+  gladiatorClass: {fileID: 11400000, guid: 4cb3c5ed0528fcb4199a2d704588d8c7, type: 2}
   hpModifier: 0
   strengthModifier: 0
   dexterityModifier: 0
@@ -29,5 +29,5 @@ MonoBehaviour:
   defense: 5
   movementPoints: 3
   actionPoints: 1
-  team: 0
+  team: 1
   startingWeapon: {fileID: 0}

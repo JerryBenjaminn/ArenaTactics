@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c7b6a0f2e3e4f5c9b1e4a9a6d3b8f21, type: 3}
+  m_Name: Rogue
+  m_EditorClassIdentifier: 
+  className: Rogue
+  description: Fast DEX-based assassin with high mobility and critical strikes.
+  baseHP: 80
+  baseSpeed: 7
+  baseStrength: 4
+  baseDexterity: 9
+  baseIntelligence: 3
+  baseDefense: 3
+  baseMovementPoints: 4
+  baseActionPoints: 1
+  traits: High crit chance, extra movement, fragile.

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c7b6a0f2e3e4f5c9b1e4a9a6d3b8f21, type: 3}
+  m_Name: Warrior
+  m_EditorClassIdentifier: 
+  className: Warrior
+  description: Strong melee fighter focused on STR-based damage and durability.
+  baseHP: 120
+  baseSpeed: 4
+  baseStrength: 8
+  baseDexterity: 3
+  baseIntelligence: 2
+  baseDefense: 6
+  baseMovementPoints: 3
+  baseActionPoints: 1
+  traits: High damage and survivability. Excels in melee combat.

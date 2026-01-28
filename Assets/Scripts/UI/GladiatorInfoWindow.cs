@@ -15,6 +15,7 @@ public class GladiatorInfoWindow : MonoBehaviour
     [SerializeField] private Image portraitImage;
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI teamText;
+    [SerializeField] private TextMeshProUGUI classText;
 
     [Header("Resources")]
     [SerializeField] private Image hpBarFill;
@@ -148,6 +149,13 @@ public class GladiatorInfoWindow : MonoBehaviour
             teamText.color = data.team == Team.Player ? playerColor : enemyColor;
         }
 
+        if (classText != null)
+        {
+            classText.text = data.gladiatorClass != null
+                ? $"Class: {data.gladiatorClass.className}"
+                : "Class: None";
+        }
+
         UpdateResourceBar(hpBarFill, hpText, currentGladiator.CurrentHP, currentGladiator.MaxHP, "HP");
         UpdateResourceBar(mpBarFill, mpText, currentGladiator.RemainingMP, currentGladiator.MaxMP, "MP");
 
@@ -192,7 +200,7 @@ public class GladiatorInfoWindow : MonoBehaviour
 
         if (defenseText != null)
         {
-            int baseDefense = data.defense;
+            int baseDefense = data.Defense;
             int totalDefense = currentGladiator.GetTotalDefense();
             int bonusDefense = totalDefense - baseDefense;
             defenseText.text = bonusDefense > 0
@@ -202,12 +210,12 @@ public class GladiatorInfoWindow : MonoBehaviour
 
         if (speedText != null)
         {
-            speedText.text = $"Speed: {data.speed}";
+            speedText.text = $"Speed: {data.Speed}";
         }
 
         if (movementText != null)
         {
-            movementText.text = $"Movement: {data.movementPoints}";
+            movementText.text = $"Movement: {data.MovementPoints}";
         }
 
         if (accuracyText != null)

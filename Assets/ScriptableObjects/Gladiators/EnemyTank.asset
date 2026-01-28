@@ -10,17 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 196b98e1502d3584ebb89450405f67f3, type: 3}
-  m_Name: TestEnemy
+  m_Name: EnemyTank
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorData
-  gladiatorName: Enemy
-  maxHP: 80
-  currentHP: 80
-  speed: 4
+  gladiatorName: Enemy Tank
+  gladiatorClass: {fileID: 11400000, guid: 779a85ab3f11cdf49a79b120780d6ad7, type: 2}
+  hpModifier: 0
+  strengthModifier: 0
+  dexterityModifier: 0
+  intelligenceModifier: 0
+  defenseModifier: 0
+  speedModifier: 0
+  maxHP: 140
+  currentHP: 140
+  speed: 3
   strength: 6
-  dexterity: 5
-  intelligence: 3
-  defense: 3
-  movementPoints: 3
+  dexterity: 2
+  intelligence: 2
+  defense: 9
+  movementPoints: 2
   actionPoints: 1
   team: 1
   startingWeapon: {fileID: 0}

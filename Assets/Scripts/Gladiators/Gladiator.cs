@@ -99,7 +99,7 @@ public class Gladiator : MonoBehaviour
     /// <summary>
     /// Gets the maximum hit points for this gladiator instance.
     /// </summary>
-    public int MaxHP => data != null ? data.maxHP : 0;
+    public int MaxHP => data != null ? data.MaxHP : 0;
 
     /// <summary>
     /// Gets the remaining movement points for this turn.
@@ -119,12 +119,12 @@ public class Gladiator : MonoBehaviour
     /// <summary>
     /// Gets the maximum movement points for this gladiator.
     /// </summary>
-    public int MaxMP => data != null ? data.movementPoints : 0;
+    public int MaxMP => data != null ? data.MovementPoints : 0;
 
     /// <summary>
     /// Gets the maximum action points for this gladiator.
     /// </summary>
-    public int MaxAP => data != null ? data.actionPoints : 0;
+    public int MaxAP => data != null ? data.ActionPoints : 0;
 
     private void Awake()
     {
@@ -155,12 +155,12 @@ public class Gladiator : MonoBehaviour
     {
         data = gladiatorData;
         isPlayerControlled = playerControlled;
-        currentHP = data != null ? data.maxHP : 0;
+        currentHP = data != null ? data.MaxHP : 0;
 
         if (data != null)
         {
-            remainingMP = data.movementPoints;
-            remainingAP = data.actionPoints;
+            remainingMP = data.MovementPoints;
+            remainingAP = data.ActionPoints;
             if (data.startingWeapon != null)
             {
                 EquipWeapon(data.startingWeapon);
@@ -240,8 +240,8 @@ public class Gladiator : MonoBehaviour
             return;
         }
 
-        remainingMP = data.movementPoints;
-        remainingAP = data.actionPoints;
+        remainingMP = data.MovementPoints;
+        remainingAP = data.ActionPoints;
     }
 
     /// <summary>
@@ -256,7 +256,7 @@ public class Gladiator : MonoBehaviour
         }
 
         currentHP -= damage;
-        currentHP = Mathf.Clamp(currentHP, 0, data != null ? data.maxHP : 0);
+        currentHP = Mathf.Clamp(currentHP, 0, data != null ? data.MaxHP : 0);
         if (DebugSettings.LOG_COMBAT)
         {
             Debug.Log($"Gladiator.TakeDamage - {name} took {damage} damage. HP: {currentHP}/{MaxHP}", this);
@@ -635,7 +635,7 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public int GetTotalStrength()
     {
-        int strength = data != null ? data.strength : 0;
+        int strength = data != null ? data.Strength : 0;
         if (equippedWeapon != null)
         {
             strength += equippedWeapon.strengthBonus;
@@ -648,7 +648,7 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public int GetTotalDexterity()
     {
-        int dexterity = data != null ? data.dexterity : 0;
+        int dexterity = data != null ? data.Dexterity : 0;
         if (equippedWeapon != null)
         {
             dexterity += equippedWeapon.dexterityBonus;
@@ -661,7 +661,7 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public int GetTotalIntelligence()
     {
-        int intelligence = data != null ? data.intelligence : 0;
+        int intelligence = data != null ? data.Intelligence : 0;
         if (equippedWeapon != null)
         {
             intelligence += equippedWeapon.intelligenceBonus;
@@ -674,7 +674,7 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public int GetTotalDefense()
     {
-        int defense = data != null ? data.defense : 0;
+        int defense = data != null ? data.Defense : 0;
         if (equippedWeapon != null)
         {
             defense += equippedWeapon.defenseBonus;
@@ -807,7 +807,7 @@ public class Gladiator : MonoBehaviour
             return 0;
         }
 
-        return data.speed + (GetTotalDexterity() / 2);
+        return data.Speed + (GetTotalDexterity() / 2);
     }
 
     /// <summary>
@@ -960,7 +960,7 @@ public class Gladiator : MonoBehaviour
             return;
         }
 
-        remainingMP = Mathf.Clamp(remainingMP + amount, 0, data.movementPoints);
+        remainingMP = Mathf.Clamp(remainingMP + amount, 0, data.MovementPoints);
     }
 
     /// <summary>

@@ -10,24 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 196b98e1502d3584ebb89450405f67f3, type: 3}
-  m_Name: TestWarrior
+  m_Name: EnemyMage
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorData
-  gladiatorName: Grimgor
-  gladiatorClass: {fileID: 11400000, guid: a1b2c3d4e5f60123456789abcdeff001, type: 2}
+  gladiatorName: Enemy Mage
+  gladiatorClass: {fileID: 11400000, guid: 4cb3c5ed0528fcb4199a2d704588d8c7, type: 2}
   hpModifier: 0
   strengthModifier: 0
   dexterityModifier: 0
   intelligenceModifier: 0
   defenseModifier: 0
   speedModifier: 0
-  maxHP: 100
-  currentHP: 100
-  speed: 5
-  strength: 5
-  dexterity: 5
-  intelligence: 5
-  defense: 5
+  maxHP: 70
+  currentHP: 70
+  speed: 4
+  strength: 2
+  dexterity: 4
+  intelligence: 10
+  defense: 2
   movementPoints: 3
   actionPoints: 1
-  team: 0
+  team: 1
   startingWeapon: {fileID: 0}
