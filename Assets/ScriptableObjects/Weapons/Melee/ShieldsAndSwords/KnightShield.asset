@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6a2f1d3c4e5f60789a0b1c2d3e4f5a6, type: 3}
+  m_Name: KnightShield
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.WeaponData
+  weaponName: Knight Shield
+  description: Sturdy shield paired with a short blade.
+  icon: {fileID: 0}
+  weaponType: 0
+  damageType: 0
+  baseDamage: 10
+  range: 1
+  attackRange: 1
+  requiresLineOfSight: 0
+  actionPointCost: 1
+  cost: 1400
+  weaponTier: 2
+  scalingStat: 0
+  strengthBonus: 1
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  defenseBonus: 5
+  accuracyBonus: 0
+  critBonus: 0
+  spellSlotBonus: 0
+  spellPowerBonus: 0

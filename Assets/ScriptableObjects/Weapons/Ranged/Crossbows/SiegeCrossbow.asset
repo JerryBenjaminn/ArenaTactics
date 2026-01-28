@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6a2f1d3c4e5f60789a0b1c2d3e4f5a6, type: 3}
+  m_Name: SiegeCrossbow
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.WeaponData
+  weaponName: Siege Crossbow
+  description: Siege-grade crossbow with devastating damage.
+  icon: {fileID: 0}
+  weaponType: 1
+  damageType: 0
+  baseDamage: 24
+  range: 6
+  attackRange: 6
+  requiresLineOfSight: 1
+  actionPointCost: 1
+  cost: 4000
+  weaponTier: 3
+  scalingStat: 1
+  strengthBonus: 0
+  dexterityBonus: 3
+  intelligenceBonus: 0
+  defenseBonus: 0
+  accuracyBonus: 0.12
+  critBonus: 0.05
+  spellSlotBonus: 0
+  spellPowerBonus: 0

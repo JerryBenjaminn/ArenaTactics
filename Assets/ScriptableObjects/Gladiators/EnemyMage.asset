@@ -30,4 +30,4 @@ MonoBehaviour:
   movementPoints: 3
   actionPoints: 1
   team: 1
-  startingWeapon: {fileID: 0}
+  startingWeapon: {fileID: 11400000, guid: 7f5f9fecbf8b18647858bdd31b528550, type: 2}

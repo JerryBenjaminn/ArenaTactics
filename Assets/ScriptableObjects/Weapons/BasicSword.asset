@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: BasicSword
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.WeaponData
   weaponName: Iron Sword
+  description: Simple training sword.
+  icon: {fileID: 0}
   weaponType: 0
   damageType: 0
   baseDamage: 5
@@ -20,6 +22,8 @@ MonoBehaviour:
   attackRange: 1
   requiresLineOfSight: 0
   actionPointCost: 1
+  cost: 0
+  weaponTier: 1
   scalingStat: 0
   strengthBonus: 1
   dexterityBonus: 0
@@ -28,3 +32,4 @@ MonoBehaviour:
   accuracyBonus: 0
   critBonus: 0
   spellSlotBonus: 0
+  spellPowerBonus: 0

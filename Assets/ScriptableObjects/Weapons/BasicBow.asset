@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: BasicBow
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.WeaponData
   weaponName: Basic Bow
+  description: Basic ranged bow.
+  icon: {fileID: 0}
   weaponType: 1
   damageType: 0
   baseDamage: 8
@@ -20,6 +22,8 @@ MonoBehaviour:
   attackRange: 6
   requiresLineOfSight: 1
   actionPointCost: 1
+  cost: 0
+  weaponTier: 1
   scalingStat: 1
   strengthBonus: 0
   dexterityBonus: 1
@@ -28,3 +32,4 @@ MonoBehaviour:
   accuracyBonus: 0
   critBonus: 0
   spellSlotBonus: 0
+  spellPowerBonus: 0

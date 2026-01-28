@@ -14,18 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   className: Warrior
   description: Strong melee fighter focused on STR-based damage and durability.
-  baseHP: 120
-  baseSpeed: 4
-  baseStrength: 8
-  baseDexterity: 3
-  baseIntelligence: 2
-  baseDefense: 6
+  baseHP: 100
+  baseSpeed: 6
+  baseStrength: 12
+  baseDexterity: 6
+  baseIntelligence: 4
+  baseDefense: 8
   baseMovementPoints: 3
   baseActionPoints: 1
   hpGrowth: 10
-  strengthGrowth: 1
+  strengthGrowth: 2
   dexterityGrowth: 1
-  intelligenceGrowth: 1
+  intelligenceGrowth: 0
   defenseGrowth: 1
-  speedGrowth: 0
+  speedGrowth: 1
   traits: High damage and survivability. Excels in melee combat.

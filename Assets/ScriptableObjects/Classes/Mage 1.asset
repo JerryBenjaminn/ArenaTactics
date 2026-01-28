@@ -13,19 +13,19 @@ MonoBehaviour:
   m_Name: Mage 1
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorClass
   className: Mage
-  description: Spell caster with high damage but low defence against melee.
-  baseHP: 100
+  description: Spell caster with high spell damage but low defence against melee.
+  baseHP: 70
   baseSpeed: 5
-  baseStrength: 2
-  baseDexterity: 4
-  baseIntelligence: 10
-  baseDefense: 1
+  baseStrength: 4
+  baseDexterity: 5
+  baseIntelligence: 14
+  baseDefense: 4
   baseMovementPoints: 3
   baseActionPoints: 1
-  hpGrowth: 10
-  strengthGrowth: 1
+  hpGrowth: 7
+  strengthGrowth: 0
   dexterityGrowth: 1
-  intelligenceGrowth: 1
-  defenseGrowth: 1
-  speedGrowth: 0
+  intelligenceGrowth: 2
+  defenseGrowth: 0
+  speedGrowth: 1
   traits: High spell damage, low defence

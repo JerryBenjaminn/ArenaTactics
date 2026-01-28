@@ -39,6 +39,9 @@ namespace ArenaTactics.Data
     {
         [Header("Identity")]
         public string weaponName;
+        [TextArea(2, 4)]
+        public string description;
+        public Sprite icon;
 
         [Header("Type")]
         public WeaponType weaponType;
@@ -50,6 +53,9 @@ namespace ArenaTactics.Data
         public int attackRange = 1;
         public bool requiresLineOfSight;
         public int actionPointCost = 1;
+        public int cost = 0;
+        [Range(1, 3)]
+        public int weaponTier = 1;
 
         [Header("Scaling")]
         public ScalingStat scalingStat = ScalingStat.Strength;
@@ -64,5 +70,6 @@ namespace ArenaTactics.Data
         public float accuracyBonus = 0f;
         public float critBonus = 0f;
         public int spellSlotBonus = 0;
+        public float spellPowerBonus = 0f;
     }
 }

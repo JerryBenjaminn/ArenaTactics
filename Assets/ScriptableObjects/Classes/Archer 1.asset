@@ -13,19 +13,19 @@ MonoBehaviour:
   m_Name: Archer 1
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorClass
   className: Archer
-  description: 
-  baseHP: 100
+  description: Fast ranged unit who excels at damaging enemies from a far.
+  baseHP: 90
   baseSpeed: 5
-  baseStrength: 5
-  baseDexterity: 5
+  baseStrength: 6
+  baseDexterity: 12
   baseIntelligence: 5
-  baseDefense: 3
+  baseDefense: 6
   baseMovementPoints: 3
-  baseActionPoints: 1
-  hpGrowth: 10
+  baseActionPoints: 2
+  hpGrowth: 9
   strengthGrowth: 1
-  dexterityGrowth: 1
+  dexterityGrowth: 2
   intelligenceGrowth: 1
   defenseGrowth: 1
-  speedGrowth: 0
+  speedGrowth: 1
   traits: 

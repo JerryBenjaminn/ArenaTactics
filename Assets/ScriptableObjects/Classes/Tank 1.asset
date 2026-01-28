@@ -13,19 +13,19 @@ MonoBehaviour:
   m_Name: Tank 1
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorClass
   className: Tank
-  description: 
-  baseHP: 100
-  baseSpeed: 5
-  baseStrength: 5
-  baseDexterity: 5
-  baseIntelligence: 5
-  baseDefense: 3
+  description: 'Durable frontline fighter who excels in absorbing damage. '
+  baseHP: 130
+  baseSpeed: 4
+  baseStrength: 8
+  baseDexterity: 4
+  baseIntelligence: 4
+  baseDefense: 12
   baseMovementPoints: 3
   baseActionPoints: 1
-  hpGrowth: 10
+  hpGrowth: 12
   strengthGrowth: 1
-  dexterityGrowth: 1
-  intelligenceGrowth: 1
-  defenseGrowth: 1
+  dexterityGrowth: 0
+  intelligenceGrowth: 0
+  defenseGrowth: 2
   speedGrowth: 0
   traits: 
