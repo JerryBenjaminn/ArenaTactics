@@ -10,6 +10,13 @@ using UnityEngine.UI;
 /// </summary>
 public class Gladiator : MonoBehaviour
 {
+    public enum GladiatorStatus
+    {
+        Healthy,
+        Injured,
+        Dead
+    }
+
     [Header("Data")]
     [SerializeField]
     private GladiatorData data;
@@ -90,6 +97,25 @@ public class Gladiator : MonoBehaviour
     [SerializeField]
     private int currentHP;
 
+    [Header("Status")]
+    [SerializeField]
+    private GladiatorStatus status = GladiatorStatus.Healthy;
+
+    [SerializeField]
+    private int injuryBattlesRemaining;
+
+    [SerializeField]
+    private int decayBattlesRemaining = -1;
+
+    [SerializeField]
+    private int startingDecayBattles = -1;
+
+    [SerializeField]
+    private bool isAscended;
+
+    [SerializeField]
+    private string ascendedFormName = string.Empty;
+
     // Cached highlight data so we can restore tiles after highlighting.
     private readonly Dictionary<GridCell, Material> highlightedCells = new Dictionary<GridCell, Material>();
     private readonly Dictionary<Gladiator, int> damageContributors = new Dictionary<Gladiator, int>();
@@ -112,6 +138,16 @@ public class Gladiator : MonoBehaviour
     /// Gets the armor currently equipped by this gladiator.
     /// </summary>
     public ArmorData EquippedArmor => equippedArmor;
+
+    public GladiatorStatus Status => status;
+
+    public int InjuryBattlesRemaining => injuryBattlesRemaining;
+
+    public int DecayBattlesRemaining => decayBattlesRemaining;
+
+    public bool IsAscended => isAscended;
+
+    public string AscendedFormName => ascendedFormName;
 
     /// <summary>
     /// Gets the gladiator's current grid position.
@@ -225,6 +261,7 @@ public class Gladiator : MonoBehaviour
         isPlayerControlled = playerControlled;
         currentLevel = 1;
         currentXP = 0;
+        status = GladiatorStatus.Healthy;
         currentHP = data != null ? MaxHP : 0;
         currentSpellSlots = MaxSpellSlots;
 
@@ -247,6 +284,8 @@ public class Gladiator : MonoBehaviour
             {
                 UnequipArmor();
             }
+
+            InitializeDecay();
 
             currentHP = MaxHP;
             remainingMP = MaxMP;
@@ -366,6 +405,8 @@ public class Gladiator : MonoBehaviour
             return;
         }
 
+        int hpBeforeHit = currentHP;
+
         if (data != null && data.race != null)
         {
             if (!isMagical && data.race.physicalDamageReduction > 0f)
@@ -399,7 +440,8 @@ public class Gladiator : MonoBehaviour
 
         if (currentHP <= 0)
         {
-            Die(source);
+            int overkillDamage = Mathf.Abs(currentHP);
+            DetermineDeathOrInjury(overkillDamage, hpBeforeHit, source);
         }
     }
 
@@ -423,21 +465,14 @@ public class Gladiator : MonoBehaviour
 
     public void Die(Gladiator killer)
     {
+        DiePermanent(killer);
+    }
+
+    private void DiePermanent(Gladiator killer)
+    {
+        status = GladiatorStatus.Dead;
         Debug.Log($"Gladiator {name} has died.", this);
-        ClearHighlights();
-        DestroyHealthBar();
-
-        AwardDeathXP(killer);
-
-        if (gridManager != null && gridManager.IsPositionValid(currentGridPosition))
-        {
-            GridCell cell = gridManager.GetCellAtPosition(currentGridPosition);
-            if (cell != null && cell.OccupyingUnit == gameObject)
-            {
-                cell.ClearOccupied();
-            }
-        }
-
+        OnDefeat(killer);
         Destroy(gameObject);
     }
 
@@ -910,6 +945,10 @@ public class Gladiator : MonoBehaviour
         {
             intelligence += equippedArmor.intelligenceBonus;
         }
+        if (isAscended && ascendedFormName == "Lich")
+        {
+            intelligence += 3;
+        }
         return intelligence;
     }
 
@@ -1079,6 +1118,10 @@ public class Gladiator : MonoBehaviour
         {
             slots += data.race.spellSlotBonus;
         }
+        if (isAscended && ascendedFormName == "Lich")
+        {
+            slots += 2;
+        }
         return slots;
     }
 
@@ -1096,6 +1139,10 @@ public class Gladiator : MonoBehaviour
         if (data != null && data.race != null)
         {
             bonus += data.race.spellPowerBonus;
+        }
+        if (isAscended && ascendedFormName == "Lich")
+        {
+            bonus += 0.25f;
         }
 
         return bonus;
@@ -1174,6 +1221,11 @@ public class Gladiator : MonoBehaviour
             }
 
             Debug.Log($"Gladiator {name} leveled up to {currentLevel}!", this);
+
+            if (currentLevel == MaxLevel)
+            {
+                CheckLichAscension();
+            }
         }
     }
 
@@ -1648,6 +1700,206 @@ public class Gladiator : MonoBehaviour
         {
             int regenAmount = Mathf.RoundToInt(MaxHP * data.race.hpRegenPerTurn);
             currentHP = Mathf.Min(currentHP + regenAmount, MaxHP);
+        }
+    }
+
+    private void DetermineDeathOrInjury(int overkillDamage, int maxHpBeforeHit, Gladiator source)
+    {
+        float deathThreshold = GetDeathThreshold();
+        if (overkillDamage >= deathThreshold)
+        {
+            DiePermanent(source);
+            return;
+        }
+
+        BecomeInjured(overkillDamage, source);
+    }
+
+    private float GetDeathThreshold()
+    {
+        float baseThreshold = MaxHP * 0.5f;
+        if (data != null && data.gladiatorClass != null)
+        {
+            switch (data.gladiatorClass.className)
+            {
+                case "Tank":
+                    baseThreshold = MaxHP * 0.60f;
+                    break;
+                case "Warrior":
+                    baseThreshold = MaxHP * 0.55f;
+                    break;
+                case "Rogue":
+                case "Mage":
+                    baseThreshold = MaxHP * 0.45f;
+                    break;
+                case "Archer":
+                    baseThreshold = MaxHP * 0.50f;
+                    break;
+            }
+        }
+
+        return baseThreshold;
+    }
+
+    private int CalculateInjuryDuration(int overkillDamage)
+    {
+        float overkillRatio = MaxHP > 0 ? (float)overkillDamage / MaxHP : 1f;
+
+        if (overkillRatio < 0.15f)
+        {
+            return 1;
+        }
+        if (overkillRatio < 0.30f)
+        {
+            return 2;
+        }
+        if (overkillRatio < 0.45f)
+        {
+            return 3;
+        }
+        return 4;
+    }
+
+    private void BecomeInjured(int overkillDamage, Gladiator source)
+    {
+        if (data != null && data.race != null && data.race.raceName == "Undead")
+        {
+            ApplyDecayDamage(2);
+            currentHP = 0;
+            OnDefeat(source);
+            return;
+        }
+
+        status = GladiatorStatus.Injured;
+        injuryBattlesRemaining = CalculateInjuryDuration(overkillDamage);
+        Debug.Log($"{name} is injured for {injuryBattlesRemaining} battles! Overkill: {overkillDamage}");
+        currentHP = 0;
+        OnDefeat(source);
+    }
+
+    private void OnDefeat(Gladiator killer)
+    {
+        ClearHighlights();
+        DestroyHealthBar();
+
+        AwardDeathXP(killer);
+
+        if (gridManager != null && gridManager.IsPositionValid(currentGridPosition))
+        {
+            GridCell cell = gridManager.GetCellAtPosition(currentGridPosition);
+            if (cell != null && cell.OccupyingUnit == gameObject)
+            {
+                cell.ClearOccupied();
+            }
+        }
+
+        Collider collider = GetComponent<Collider>();
+        if (collider != null)
+        {
+            collider.enabled = false;
+        }
+
+        Renderer renderer = GetComponentInChildren<Renderer>();
+        if (renderer != null)
+        {
+            renderer.enabled = false;
+        }
+    }
+
+    public void Recover()
+    {
+        if (status == GladiatorStatus.Injured && injuryBattlesRemaining <= 0)
+        {
+            status = GladiatorStatus.Healthy;
+            currentHP = MaxHP;
+            Debug.Log($"{name} has recovered from injury!");
+        }
+    }
+
+    public void DecrementInjuryTimer()
+    {
+        if (status != GladiatorStatus.Injured)
+        {
+            return;
+        }
+
+        injuryBattlesRemaining = Mathf.Max(0, injuryBattlesRemaining - 1);
+        if (injuryBattlesRemaining == 0)
+        {
+            Recover();
+        }
+    }
+
+    public void InitializeDecay()
+    {
+        if (data != null && data.race != null && data.race.raceName == "Undead")
+        {
+            if (decayBattlesRemaining == -1)
+            {
+                decayBattlesRemaining = 13;
+                startingDecayBattles = decayBattlesRemaining;
+            }
+        }
+        else
+        {
+            decayBattlesRemaining = -1;
+            startingDecayBattles = -1;
+        }
+    }
+
+    public void ApplyDecayDamage(int amount)
+    {
+        if (decayBattlesRemaining > 0)
+        {
+            decayBattlesRemaining -= amount;
+            Debug.Log($"{name} decay: {decayBattlesRemaining} battles remaining");
+
+            if (decayBattlesRemaining <= 0)
+            {
+                Debug.Log($"{name} has completely decayed and crumbled to dust!");
+                DiePermanent(null);
+            }
+        }
+    }
+
+    public void ProcessBattleDecay()
+    {
+        if (data != null && data.race != null && data.race.raceName == "Undead" && status != GladiatorStatus.Dead)
+        {
+            ApplyDecayDamage(1);
+        }
+    }
+
+    public void CheckLichAscension()
+    {
+        if (currentLevel >= 10 && data != null && data.race != null && data.race.raceName == "Undead" && !isAscended)
+        {
+            if (decayBattlesRemaining == startingDecayBattles)
+            {
+                AscendToLich();
+            }
+            else
+            {
+                Debug.Log($"{name} reached Level 10 but took decay damage. No Lich transformation.");
+            }
+        }
+    }
+
+    private void AscendToLich()
+    {
+        isAscended = true;
+        ascendedFormName = "Lich";
+        decayBattlesRemaining = -1;
+        Debug.Log($"✨ {name} has ascended to become a LICH! ✨");
+        ApplyLichVisuals();
+    }
+
+    private void ApplyLichVisuals()
+    {
+        Renderer renderer = GetComponentInChildren<Renderer>();
+        if (renderer != null)
+        {
+            renderer.material.color = new Color(0.8f, 0.2f, 1.0f, 1.0f);
         }
     }
 

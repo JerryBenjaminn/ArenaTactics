@@ -45,6 +45,10 @@ public class GladiatorInfoWindow : MonoBehaviour
     [SerializeField] private TextMeshProUGUI magicResistText;
     [SerializeField] private TextMeshProUGUI spellSlotsText;
 
+    [Header("Status")]
+    [SerializeField] private TextMeshProUGUI statusText;
+    [SerializeField] private TextMeshProUGUI decayText;
+
     [Header("Equipment")]
     [SerializeField] private TextMeshProUGUI weaponText;
     [SerializeField] private TextMeshProUGUI armorText;
@@ -272,6 +276,59 @@ public class GladiatorInfoWindow : MonoBehaviour
 
         UpdateEquipment();
         UpdateRaceSpecials();
+        UpdateStatusDisplay();
+    }
+
+    private void UpdateStatusDisplay()
+    {
+        if (currentGladiator == null || statusText == null)
+        {
+            return;
+        }
+
+        if (currentGladiator.IsAscended && currentGladiator.AscendedFormName == "Lich")
+        {
+            statusText.text = "STATUS: LICH";
+            statusText.color = new Color(0.8f, 0.2f, 1.0f, 1.0f);
+        }
+        else if (currentGladiator.Status == Gladiator.GladiatorStatus.Injured)
+        {
+            statusText.text = $"STATUS: INJURED ({currentGladiator.InjuryBattlesRemaining} battles)";
+            statusText.color = Color.yellow;
+        }
+        else if (currentGladiator.Status == Gladiator.GladiatorStatus.Dead)
+        {
+            statusText.text = "STATUS: DEAD";
+            statusText.color = Color.red;
+        }
+        else
+        {
+            statusText.text = "STATUS: HEALTHY";
+            statusText.color = Color.green;
+        }
+
+        if (decayText == null)
+        {
+            return;
+        }
+
+        if (currentGladiator.Data != null &&
+            currentGladiator.Data.race != null &&
+            currentGladiator.Data.race.raceName == "Undead" &&
+            currentGladiator.DecayBattlesRemaining > 0)
+        {
+            decayText.text = $"DECAY: {currentGladiator.DecayBattlesRemaining} battles remaining";
+            decayText.color = currentGladiator.DecayBattlesRemaining <= 3 ? Color.red : Color.yellow;
+        }
+        else if (currentGladiator.IsAscended && currentGladiator.AscendedFormName == "Lich")
+        {
+            decayText.text = "Eternal Lich (No Decay)";
+            decayText.color = new Color(0.8f, 0.2f, 1.0f, 1.0f);
+        }
+        else
+        {
+            decayText.text = string.Empty;
+        }
     }
 
     private void UpdateResourceBar(Image barFill, TextMeshProUGUI text, int current, int max, string label)

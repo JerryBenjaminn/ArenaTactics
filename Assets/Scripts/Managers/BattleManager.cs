@@ -380,12 +380,37 @@ public class BattleManager : MonoBehaviour
             SetBattleState(BattleState.Defeat);
             Debug.Log("BattleManager: Defeat! All player gladiators are down.");
             AwardSurvivalXP();
+            ProcessPostBattleRecovery(allGladiators);
         }
         else if (livingEnemies == 0 && livingPlayers > 0)
         {
             SetBattleState(BattleState.Victory);
             Debug.Log("BattleManager: Victory! All enemy gladiators are down.");
             AwardSurvivalXP();
+            ProcessPostBattleRecovery(allGladiators);
+        }
+    }
+
+    public void ProcessPostBattleRecovery(List<Gladiator> roster)
+    {
+        if (roster == null)
+        {
+            return;
+        }
+
+        foreach (Gladiator gladiator in roster)
+        {
+            if (gladiator == null)
+            {
+                continue;
+            }
+
+            if (gladiator.Status == Gladiator.GladiatorStatus.Injured)
+            {
+                gladiator.DecrementInjuryTimer();
+            }
+
+            gladiator.ProcessBattleDecay();
         }
     }
 
