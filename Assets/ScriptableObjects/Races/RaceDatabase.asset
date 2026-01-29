@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b9c0d1e2f3a4b5c6d7e8f9010203243, type: 3}
+  m_Name: RaceDatabase
+  m_EditorClassIdentifier: ArenaTactics.Data.RaceDatabase
+  races:
+  - {fileID: 11400000, guid: 65768798a9bacbdcedfe0f1021324354, type: 2}
+  - {fileID: 11400000, guid: 32435465768798a9bacbdcedfe0f1021, type: 2}
+  - {fileID: 11400000, guid: 768798a9bacbdcedfe0f102132435465, type: 2}
+  - {fileID: 11400000, guid: 435465768798a9bacbdcedfe0f102132, type: 2}
+  - {fileID: 11400000, guid: 5465768798a9bacbdcedfe0f10213243, type: 2}
+  - {fileID: 11400000, guid: 98a9bacbdcedfe0f1021324354657687, type: 2}
+  - {fileID: 11400000, guid: 102132435465768798a9bacbdcedfe0f, type: 2}
+  - {fileID: 11400000, guid: 8798a9bacbdcedfe0f10213243546576, type: 2}
+  - {fileID: 11400000, guid: 2132435465768798a9bacbdcedfe0f10, type: 2}
+  - {fileID: 11400000, guid: a9bacbdcedfe0f102132435465768798, type: 2}

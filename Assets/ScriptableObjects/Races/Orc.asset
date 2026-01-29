@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a8b9c0d1e2f3a4b5c6d7e8f90102032, type: 3}
+  m_Name: Orc
+  m_EditorClassIdentifier: ArenaTactics.Data.RaceData
+  raceName: Orc
+  description: Brutal melee combatants with unmatched physical strength.
+  hpModifier: 15
+  strengthModifier: 3
+  dexterityModifier: -2
+  intelligenceModifier: -2
+  defenseModifier: 1
+  speedModifier: -1
+  xpBonusMultiplier: 1
+  meleeDamageBonus: 0.05
+  dexWeaponDamageBonus: 0
+  magicResistBonus: 0
+  physicalDamageReduction: 0
+  dodgeBonus: 0
+  spellPowerBonus: 0
+  spellSlotBonus: 0
+  immuneToStunParalysis: 0
+  hasPoisonOnHit: 0
+  poisonChance: 0
+  poisonDamagePerTurn: 0
+  hpRegenPerTurn: 0
+  primaryColor: {r: 0.2, g: 0.7, b: 0.2, a: 1}
+  heightScale: 1.1
+  icon: {fileID: 0}

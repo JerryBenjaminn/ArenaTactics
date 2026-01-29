@@ -377,6 +377,7 @@ public static class AIController
         if (damage > 0)
         {
             target.TakeDamage(damage, attacker);
+            attacker.TryApplyPoison(target);
         }
         attacker.TrySpendAP(1);
 

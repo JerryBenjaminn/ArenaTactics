@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorData
   gladiatorName: Enemy Mage
   gladiatorClass: {fileID: 11400000, guid: 4cb3c5ed0528fcb4199a2d704588d8c7, type: 2}
+  race: {fileID: 11400000, guid: a9bacbdcedfe0f102132435465768798, type: 2}
   hpModifier: 0
   strengthModifier: 0
   dexterityModifier: 0

@@ -16,6 +16,8 @@ public class GladiatorInfoWindow : MonoBehaviour
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI teamText;
     [SerializeField] private TextMeshProUGUI classText;
+    [SerializeField] private TextMeshProUGUI raceText;
+    [SerializeField] private TextMeshProUGUI specialsText;
 
     [Header("Resources")]
     [SerializeField] private Image hpBarFill;
@@ -152,6 +154,11 @@ public class GladiatorInfoWindow : MonoBehaviour
             teamText.color = data.team == Team.Player ? playerColor : enemyColor;
         }
 
+        if (raceText != null)
+        {
+            raceText.text = data.race != null ? $"Race: {data.race.raceName}" : "Race: None";
+        }
+
         if (classText != null)
         {
             classText.text = data.gladiatorClass != null
@@ -264,6 +271,7 @@ public class GladiatorInfoWindow : MonoBehaviour
         }
 
         UpdateEquipment();
+        UpdateRaceSpecials();
     }
 
     private void UpdateResourceBar(Image barFill, TextMeshProUGUI text, int current, int max, string label)
@@ -366,5 +374,69 @@ public class GladiatorInfoWindow : MonoBehaviour
         {
             trinketText.text = "Trinket: None";
         }
+    }
+
+    private void UpdateRaceSpecials()
+    {
+        if (specialsText == null || currentGladiator == null || currentGladiator.Data == null)
+        {
+            return;
+        }
+
+        if (currentGladiator.Data.race == null)
+        {
+            specialsText.text = "No racial bonuses";
+            return;
+        }
+
+        RaceData race = currentGladiator.Data.race;
+        System.Text.StringBuilder builder = new System.Text.StringBuilder();
+
+        if (race.xpBonusMultiplier > 1f)
+        {
+            builder.AppendLine($"+{(race.xpBonusMultiplier - 1f) * 100f:0}% XP");
+        }
+        if (race.meleeDamageBonus > 0f)
+        {
+            builder.AppendLine($"+{race.meleeDamageBonus * 100f:0}% Melee Damage");
+        }
+        if (race.dexWeaponDamageBonus > 0f)
+        {
+            builder.AppendLine($"+{race.dexWeaponDamageBonus * 100f:0}% DEX Weapon Damage");
+        }
+        if (race.magicResistBonus > 0f)
+        {
+            builder.AppendLine($"+{race.magicResistBonus * 100f:0}% Magic Resist");
+        }
+        if (race.physicalDamageReduction > 0f)
+        {
+            builder.AppendLine($"-{race.physicalDamageReduction * 100f:0}% Physical Damage");
+        }
+        if (race.dodgeBonus > 0f)
+        {
+            builder.AppendLine($"+{race.dodgeBonus * 100f:0}% Dodge");
+        }
+        if (race.spellPowerBonus > 0f)
+        {
+            builder.AppendLine($"+{race.spellPowerBonus * 100f:0}% Spell Power");
+        }
+        if (race.spellSlotBonus > 0)
+        {
+            builder.AppendLine($"+{race.spellSlotBonus} Spell Slots");
+        }
+        if (race.immuneToStunParalysis)
+        {
+            builder.AppendLine("Immune to Stun");
+        }
+        if (race.hasPoisonOnHit)
+        {
+            builder.AppendLine($"Poison on hit ({race.poisonChance * 100f:0}% for {race.poisonDamagePerTurn} dmg)");
+        }
+        if (race.hpRegenPerTurn > 0f)
+        {
+            builder.AppendLine($"Regenerate {race.hpRegenPerTurn * 100f:0}% HP/turn");
+        }
+
+        specialsText.text = builder.Length > 0 ? builder.ToString().TrimEnd() : "No racial bonuses";
     }
 }

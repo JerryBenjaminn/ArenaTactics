@@ -94,6 +94,9 @@ public class Gladiator : MonoBehaviour
     private readonly Dictionary<GridCell, Material> highlightedCells = new Dictionary<GridCell, Material>();
     private readonly Dictionary<Gladiator, int> damageContributors = new Dictionary<Gladiator, int>();
     private readonly Dictionary<EffectType, ActiveEffect> activeEffects = new Dictionary<EffectType, ActiveEffect>();
+    private int poisonTurnsRemaining;
+    private int poisonDamagePerTurn;
+    private Gladiator poisonSource;
 
     /// <summary>
     /// Gets this gladiator's data asset.
@@ -335,6 +338,8 @@ public class Gladiator : MonoBehaviour
         UpdateSpellCooldowns();
         RefreshSpellSlots();
         ProcessActiveEffects();
+        ProcessPoison();
+        ApplyRaceTurnStartEffects();
     }
 
     /// <summary>
@@ -343,7 +348,7 @@ public class Gladiator : MonoBehaviour
     /// <param name="damage">Final damage to apply (defense already accounted for).</param>
     public void TakeDamage(int damage)
     {
-        TakeDamage(damage, null);
+        TakeDamage(damage, null, false);
     }
 
     /// <summary>
@@ -351,6 +356,30 @@ public class Gladiator : MonoBehaviour
     /// </summary>
     public void TakeDamage(int damage, Gladiator source)
     {
+        TakeDamage(damage, source, false);
+    }
+
+    public void TakeDamage(int damage, Gladiator source, bool isMagical)
+    {
+        if (damage <= 0)
+        {
+            return;
+        }
+
+        if (data != null && data.race != null)
+        {
+            if (!isMagical && data.race.physicalDamageReduction > 0f)
+            {
+                damage = Mathf.RoundToInt(damage * (1f - data.race.physicalDamageReduction));
+            }
+
+            if (isMagical && data.race.magicResistBonus > 0f)
+            {
+                damage = Mathf.RoundToInt(damage * (1f - data.race.magicResistBonus));
+            }
+        }
+
+        damage = Mathf.Max(0, damage);
         if (damage <= 0)
         {
             return;
@@ -913,9 +942,13 @@ public class Gladiator : MonoBehaviour
             return 0;
         }
 
+        float baseAttack;
+        ScalingStat scaling = ScalingStat.Strength;
+
         if (equippedWeapon != null)
         {
-            int baseAttack = equippedWeapon.baseDamage;
+            baseAttack = equippedWeapon.baseDamage;
+            scaling = equippedWeapon.scalingStat;
             switch (equippedWeapon.scalingStat)
             {
                 case ScalingStat.Dexterity:
@@ -928,10 +961,25 @@ public class Gladiator : MonoBehaviour
                     baseAttack += GetTotalStrength();
                     break;
             }
-            return baseAttack;
+        }
+        else
+        {
+            baseAttack = GetTotalStrength();
         }
 
-        return GetTotalStrength();
+        if (data != null && data.race != null)
+        {
+            if (scaling == ScalingStat.Strength && data.race.meleeDamageBonus > 0f)
+            {
+                baseAttack *= 1f + data.race.meleeDamageBonus;
+            }
+            else if (scaling == ScalingStat.Dexterity && data.race.dexWeaponDamageBonus > 0f)
+            {
+                baseAttack *= 1f + data.race.dexWeaponDamageBonus;
+            }
+        }
+
+        return Mathf.RoundToInt(baseAttack);
     }
 
     /// <summary>
@@ -967,6 +1015,10 @@ public class Gladiator : MonoBehaviour
         if (equippedArmor != null)
         {
             dodge += equippedArmor.dodgeBonus;
+        }
+        if (data != null && data.race != null)
+        {
+            dodge += data.race.dodgeBonus;
         }
         return Mathf.Clamp(dodge, 0f, 0.5f);
     }
@@ -1023,6 +1075,10 @@ public class Gladiator : MonoBehaviour
         {
             slots += equippedArmor.spellSlotBonus;
         }
+        if (data != null && data.race != null)
+        {
+            slots += data.race.spellSlotBonus;
+        }
         return slots;
     }
 
@@ -1036,6 +1092,10 @@ public class Gladiator : MonoBehaviour
         if (equippedArmor != null)
         {
             bonus += equippedArmor.spellPowerBonus;
+        }
+        if (data != null && data.race != null)
+        {
+            bonus += data.race.spellPowerBonus;
         }
 
         return bonus;
@@ -1067,7 +1127,12 @@ public class Gladiator : MonoBehaviour
             return 0;
         }
 
-        return GetTotalIntelligence() / 2;
+        int resistance = GetTotalIntelligence() / 2;
+        if (data.race != null && data.race.magicResistBonus > 0f)
+        {
+            resistance += Mathf.RoundToInt(data.race.magicResistBonus * 100f);
+        }
+        return resistance;
     }
 
     /// <summary>
@@ -1078,6 +1143,11 @@ public class Gladiator : MonoBehaviour
         if (amount <= 0 || currentLevel >= MaxLevel)
         {
             return;
+        }
+
+        if (data != null && data.race != null && data.race.xpBonusMultiplier > 0f)
+        {
+            amount = Mathf.RoundToInt(amount * data.race.xpBonusMultiplier);
         }
 
         currentXP += amount;
@@ -1248,6 +1318,11 @@ public class Gladiator : MonoBehaviour
     public void AddOrRefreshEffect(EffectType effectType, int value, int duration)
     {
         if (effectType == EffectType.None || duration <= 0)
+        {
+            return;
+        }
+
+        if (effectType == EffectType.Stun && data != null && data.race != null && data.race.immuneToStunParalysis)
         {
             return;
         }
@@ -1513,6 +1588,67 @@ public class Gladiator : MonoBehaviour
     {
         public int value;
         public int turnsRemaining;
+    }
+
+    public void ApplyPoison(int damagePerTurn, int turns, Gladiator source)
+    {
+        if (damagePerTurn <= 0 || turns <= 0)
+        {
+            return;
+        }
+
+        poisonDamagePerTurn = damagePerTurn;
+        poisonTurnsRemaining = Mathf.Max(poisonTurnsRemaining, turns);
+        poisonSource = source;
+    }
+
+    public void TryApplyPoison(Gladiator target)
+    {
+        if (target == null || data == null || data.race == null)
+        {
+            return;
+        }
+
+        if (!data.race.hasPoisonOnHit || data.race.poisonChance <= 0f || data.race.poisonDamagePerTurn <= 0)
+        {
+            return;
+        }
+
+        float roll = Random.value;
+        if (roll <= data.race.poisonChance)
+        {
+            target.ApplyPoison(data.race.poisonDamagePerTurn, 3, this);
+        }
+    }
+
+    private void ProcessPoison()
+    {
+        if (poisonTurnsRemaining <= 0 || poisonDamagePerTurn <= 0)
+        {
+            return;
+        }
+
+        TakeDamage(poisonDamagePerTurn, poisonSource, true);
+        poisonTurnsRemaining--;
+        if (poisonTurnsRemaining <= 0)
+        {
+            poisonDamagePerTurn = 0;
+            poisonSource = null;
+        }
+    }
+
+    private void ApplyRaceTurnStartEffects()
+    {
+        if (data == null || data.race == null)
+        {
+            return;
+        }
+
+        if (data.race.hpRegenPerTurn > 0f)
+        {
+            int regenAmount = Mathf.RoundToInt(MaxHP * data.race.hpRegenPerTurn);
+            currentHP = Mathf.Min(currentHP + regenAmount, MaxHP);
+        }
     }
 
     public void PlaySpellEffect(Color color, float duration = 0.2f)
@@ -1908,7 +2044,21 @@ public class Gladiator : MonoBehaviour
         renderer.material.color = teamColor;
 
         // Ensure the gladiator visually fits on a grid cell.
-        transform.localScale = new Vector3(0.5f, 1f, 0.5f);
+        Vector3 baseScale = new Vector3(0.5f, 1f, 0.5f);
+        transform.localScale = baseScale;
+
+        ApplyRaceVisuals(renderer, baseScale);
+    }
+
+    private void ApplyRaceVisuals(Renderer renderer, Vector3 baseScale)
+    {
+        if (data == null || data.race == null || renderer == null)
+        {
+            return;
+        }
+
+        renderer.material.color = data.race.primaryColor;
+        transform.localScale = new Vector3(baseScale.x, baseScale.y * data.race.heightScale, baseScale.z);
     }
 }
 

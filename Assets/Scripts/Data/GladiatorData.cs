@@ -24,6 +24,9 @@ namespace ArenaTactics.Data
         [Header("Class")]
         public GladiatorClass gladiatorClass;
 
+        [Header("Race")]
+        public RaceData race;
+
         [Header("Stat Modifiers (added to class base)")]
         [Tooltip("These modify the base stats from the class")]
         public int hpModifier = 0;
@@ -44,12 +47,24 @@ namespace ArenaTactics.Data
         public int movementPoints = 3;
         public int actionPoints = 1;
 
-        public int MaxHP => (gladiatorClass != null ? gladiatorClass.baseHP : maxHP) + hpModifier;
-        public int Speed => (gladiatorClass != null ? gladiatorClass.baseSpeed : speed) + speedModifier;
-        public int Strength => (gladiatorClass != null ? gladiatorClass.baseStrength : strength) + strengthModifier;
-        public int Dexterity => (gladiatorClass != null ? gladiatorClass.baseDexterity : dexterity) + dexterityModifier;
-        public int Intelligence => (gladiatorClass != null ? gladiatorClass.baseIntelligence : intelligence) + intelligenceModifier;
-        public int Defense => (gladiatorClass != null ? gladiatorClass.baseDefense : defense) + defenseModifier;
+        public int MaxHP => (gladiatorClass != null ? gladiatorClass.baseHP : maxHP) +
+                            (race != null ? race.hpModifier : 0) +
+                            hpModifier;
+        public int Speed => (gladiatorClass != null ? gladiatorClass.baseSpeed : speed) +
+                            (race != null ? race.speedModifier : 0) +
+                            speedModifier;
+        public int Strength => (gladiatorClass != null ? gladiatorClass.baseStrength : strength) +
+                               (race != null ? race.strengthModifier : 0) +
+                               strengthModifier;
+        public int Dexterity => (gladiatorClass != null ? gladiatorClass.baseDexterity : dexterity) +
+                                (race != null ? race.dexterityModifier : 0) +
+                                dexterityModifier;
+        public int Intelligence => (gladiatorClass != null ? gladiatorClass.baseIntelligence : intelligence) +
+                                   (race != null ? race.intelligenceModifier : 0) +
+                                   intelligenceModifier;
+        public int Defense => (gladiatorClass != null ? gladiatorClass.baseDefense : defense) +
+                              (race != null ? race.defenseModifier : 0) +
+                              defenseModifier;
         public int MovementPoints => gladiatorClass != null ? gladiatorClass.baseMovementPoints : movementPoints;
         public int ActionPoints => gladiatorClass != null ? gladiatorClass.baseActionPoints : actionPoints;
 

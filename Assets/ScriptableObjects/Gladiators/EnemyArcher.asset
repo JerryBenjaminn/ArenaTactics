@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorData
   gladiatorName: Enemy Archer
   gladiatorClass: {fileID: 11400000, guid: d1d9a52446be0bd4a92957795afbb924, type: 2}
+  race: {fileID: 11400000, guid: 8798a9bacbdcedfe0f10213243546576, type: 2}
   hpModifier: 0
   strengthModifier: 0
   dexterityModifier: 0

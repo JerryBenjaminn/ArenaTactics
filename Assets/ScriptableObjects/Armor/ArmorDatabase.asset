@@ -12,4 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a7b9c0d1e2f3a4b5c6d7e8f90102031, type: 3}
   m_Name: ArmorDatabase
   m_EditorClassIdentifier: ArenaTactics.Data.ArmorDatabase
-  armors: []
+  armors:
+  - {fileID: 11400000, guid: 7d0e1f2a3b4c5d6e7f8091a2b3c4d5e6, type: 2}
+  - {fileID: 11400000, guid: a03b4c5d6e7f8091a2b3c4d5e6f70819, type: 2}
+  - {fileID: 11400000, guid: d36e7f8091a2b3c4d5e6f708192a3b4c, type: 2}
+  - {fileID: 11400000, guid: a69b1c2d3e4f5061728394a5b6c7d8e9, type: 2}
+  - {fileID: 11400000, guid: 8e1f2a3b4c5d6e7f8091a2b3c4d5e6f7, type: 2}
+  - {fileID: 11400000, guid: e47f8091a2b3c4d5e6f708192a3b4c5d, type: 2}
+  - {fileID: 11400000, guid: b7ac2d3e4f5061728394a5b6c7d8e9f0, type: 2}
+  - {fileID: 11400000, guid: 9f2a3b4c5d6e7f8091a2b3c4d5e6f708, type: 2}
+  - {fileID: 11400000, guid: c25d6e7f8091a2b3c4d5e6f708192a3b, type: 2}
+  - {fileID: 11400000, guid: f58a91a2b3c4d5e6f708192a3b4c5d6e, type: 2}
+  - {fileID: 11400000, guid: c8bd3e4f5061728394a5b6c7d8e9f001, type: 2}

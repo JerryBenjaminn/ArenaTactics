@@ -145,7 +145,7 @@ public static class CombatSystem
         int bonus = Mathf.RoundToInt(spell.basePower * caster.GetSpellPowerBonus());
         int damage = spell.basePower + scaling + bonus;
 
-        target.TakeDamage(Mathf.Max(0, damage), caster);
+        target.TakeDamage(Mathf.Max(0, damage), caster, true);
         target.PlaySpellEffect(new Color(1f, 0.4f, 0.1f, 1f));
 
         if (DebugSettings.LOG_COMBAT)
@@ -183,7 +183,7 @@ public static class CombatSystem
 
             if (spell.spellType == SpellType.AOE && spell.basePower > 0)
             {
-                gladiator.TakeDamage(Mathf.Max(0, damage), caster);
+                gladiator.TakeDamage(Mathf.Max(0, damage), caster, true);
                 gladiator.PlaySpellEffect(new Color(1f, 0.4f, 0.1f, 1f));
             }
 

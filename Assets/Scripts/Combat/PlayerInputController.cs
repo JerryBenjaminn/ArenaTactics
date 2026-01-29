@@ -457,6 +457,7 @@ public class PlayerInputController : MonoBehaviour
         if (damage > 0)
         {
             target.TakeDamage(damage, selectedGladiator);
+            selectedGladiator.TryApplyPoison(target);
         }
         selectedGladiator.TrySpendAP(1);
         hasAttackedThisTurn = true;
