@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Data.GladiatorData
   gladiatorName: Enemy Tank
   gladiatorClass: {fileID: 11400000, guid: 779a85ab3f11cdf49a79b120780d6ad7, type: 2}
-  race: {fileID: 11400000, guid: 435465768798a9bacbdcedfe0f102132, type: 2}
+  race: {fileID: 11400000, guid: dc2a3b4c5d6e7f8091a2b3c4d5e6f708, type: 2}
   hpModifier: 0
   strengthModifier: 0
   dexterityModifier: 0
