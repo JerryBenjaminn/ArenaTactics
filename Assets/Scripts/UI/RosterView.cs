@@ -101,6 +101,17 @@ namespace ArenaTactics.UI
                 return;
             }
 
+            if (gladiator.status == GladiatorStatus.Dead)
+            {
+                Debug.LogWarning($"{gladiator.templateData.gladiatorName} is dead and cannot be selected!");
+                return;
+            }
+            if (gladiator.status == GladiatorStatus.Injured)
+            {
+                Debug.LogWarning($"{gladiator.templateData.gladiatorName} is injured and cannot fight!");
+                return;
+            }
+
             if (selectedSquad.Contains(gladiator))
             {
                 selectedSquad.Remove(gladiator);

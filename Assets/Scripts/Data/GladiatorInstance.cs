@@ -128,6 +128,7 @@ namespace ArenaTactics.Data
 
         public string GetStatusString()
         {
+            Debug.Log($"GetStatusString for {templateData.gladiatorName}: status={status}, injured={injuryBattlesRemaining}", null);
             if (isAscended)
             {
                 return ascendedFormName.ToUpperInvariant();

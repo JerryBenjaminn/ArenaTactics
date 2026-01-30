@@ -435,13 +435,19 @@ public class BattleManager : MonoBehaviour
                 continue;
             }
 
+            Debug.Log($"=== BEFORE SAVE: {gladiator.Data.gladiatorName} ===");
+            Debug.Log($"  Battle Gladiator status: {gladiator.Status}");
+            Debug.Log($"  Battle injury remaining: {gladiator.InjuryBattlesRemaining}");
+            Debug.Log($"  LinkedInstance status: {gladiator.linkedInstance.status}");
+            Debug.Log($"  LinkedInstance injury: {gladiator.linkedInstance.injuryBattlesRemaining}");
+
             GladiatorInstance instance = gladiator.linkedInstance;
 
             instance.currentLevel = gladiator.CurrentLevel;
             instance.currentXP = gladiator.CurrentXP;
-            instance.currentHP = gladiator.CurrentHP;
             instance.maxHP = gladiator.MaxHP;
 
+            Debug.Log($"Saving status for {gladiator.Data.gladiatorName}: {gladiator.Status} -> {instance.status}");
             instance.status = gladiator.Status;
             instance.injuryBattlesRemaining = gladiator.InjuryBattlesRemaining;
             instance.decayBattlesRemaining = gladiator.DecayBattlesRemaining;
@@ -461,7 +467,22 @@ public class BattleManager : MonoBehaviour
                 }
             }
 
-            Debug.Log($"Saved: {gladiator.Data.gladiatorName} - Lvl {gladiator.CurrentLevel}, XP {gladiator.CurrentXP}, HP {gladiator.CurrentHP}/{gladiator.MaxHP}, Status: {gladiator.Status}");
+            if (gladiator.Status == GladiatorStatus.Healthy)
+            {
+                instance.currentHP = instance.maxHP;
+                Debug.Log($"{gladiator.Data.gladiatorName} survived - healed to full HP.");
+            }
+            else
+            {
+                instance.currentHP = gladiator.CurrentHP;
+                Debug.Log($"{gladiator.Data.gladiatorName} defeated - status: {gladiator.Status}.");
+            }
+
+            Debug.Log($"=== AFTER SAVE: {gladiator.Data.gladiatorName} ===");
+            Debug.Log($"  LinkedInstance status: {instance.status}");
+            Debug.Log($"  LinkedInstance injury: {instance.injuryBattlesRemaining}");
+
+            Debug.Log($"Saved: {gladiator.Data.gladiatorName} - Lvl {gladiator.CurrentLevel}, XP {gladiator.CurrentXP}, HP {instance.currentHP}/{instance.maxHP}, Status: {gladiator.Status}");
         }
 
         Debug.Log("=== Battle Results Saved ===");
@@ -505,6 +526,12 @@ public class BattleManager : MonoBehaviour
         {
             if (gladiator == null)
             {
+                continue;
+            }
+
+            if (gladiator.IsPlayerControlled && gladiator.linkedInstance != null)
+            {
+                Debug.Log($"BattleManager: Skipping post-battle recovery for player-linked {gladiator.Data?.gladiatorName} (handled by PersistentDataManager).");
                 continue;
             }
 

@@ -493,7 +493,10 @@ public class Gladiator : MonoBehaviour
         }
 
         currentHP -= damage;
-        currentHP = Mathf.Clamp(currentHP, 0, MaxHP);
+        if (currentHP > 0)
+        {
+            currentHP = Mathf.Min(currentHP, MaxHP);
+        }
         if (DebugSettings.LOG_COMBAT)
         {
             Debug.Log($"Gladiator.TakeDamage - {name} took {damage} damage. HP: {currentHP}/{MaxHP}", this);
@@ -502,7 +505,9 @@ public class Gladiator : MonoBehaviour
         if (currentHP <= 0)
         {
             int overkillDamage = Mathf.Abs(currentHP);
+            currentHP = 0;
             DetermineDeathOrInjury(overkillDamage, hpBeforeHit, source);
+            Debug.Log($"Gladiator {name} HP <= 0. Status after death check: {status}", this);
         }
     }
 
@@ -533,6 +538,28 @@ public class Gladiator : MonoBehaviour
     {
         status = GladiatorStatus.Dead;
         Debug.Log($"Gladiator {name} has died.", this);
+        if (linkedInstance != null)
+        {
+            linkedInstance.status = status;
+            linkedInstance.currentLevel = currentLevel;
+            linkedInstance.currentXP = currentXP;
+            linkedInstance.maxHP = MaxHP;
+            linkedInstance.currentHP = 0;
+            linkedInstance.injuryBattlesRemaining = injuryBattlesRemaining;
+            linkedInstance.decayBattlesRemaining = decayBattlesRemaining;
+            linkedInstance.startingDecayBattles = startingDecayBattles;
+            linkedInstance.isAscended = isAscended;
+            linkedInstance.ascendedFormName = ascendedFormName;
+            linkedInstance.equippedWeapon = equippedWeapon;
+            linkedInstance.equippedArmor = equippedArmor;
+            if (linkedInstance.knownSpells != null && knownSpells != null)
+            {
+                for (int i = 0; i < linkedInstance.knownSpells.Length; i++)
+                {
+                    linkedInstance.knownSpells[i] = i < knownSpells.Count ? knownSpells[i] : null;
+                }
+            }
+        }
         OnDefeat(killer);
         Destroy(gameObject);
     }
@@ -1767,6 +1794,7 @@ public class Gladiator : MonoBehaviour
     private void DetermineDeathOrInjury(int overkillDamage, int maxHpBeforeHit, Gladiator source)
     {
         float deathThreshold = GetDeathThreshold();
+        Debug.Log($"{name} - Overkill: {overkillDamage}, Death threshold: {deathThreshold}", this);
         if (overkillDamage >= deathThreshold)
         {
             DiePermanent(source);
@@ -1827,6 +1855,7 @@ public class Gladiator : MonoBehaviour
         {
             ApplyDecayDamage(2);
             currentHP = 0;
+            Debug.Log($"{name} is undead and takes decay instead of injury. Decay remaining: {decayBattlesRemaining}", this);
             OnDefeat(source);
             return;
         }
@@ -1834,12 +1863,18 @@ public class Gladiator : MonoBehaviour
         status = GladiatorStatus.Injured;
         injuryBattlesRemaining = CalculateInjuryDuration(overkillDamage);
         Debug.Log($"{name} is injured for {injuryBattlesRemaining} battles! Overkill: {overkillDamage}");
+        if (linkedInstance != null)
+        {
+            linkedInstance.status = status;
+            linkedInstance.injuryBattlesRemaining = injuryBattlesRemaining;
+        }
         currentHP = 0;
         OnDefeat(source);
     }
 
     private void OnDefeat(Gladiator killer)
     {
+        Debug.Log($"Gladiator {name} defeated. Status: {status}.", this);
         ClearHighlights();
         DestroyHealthBar();
 

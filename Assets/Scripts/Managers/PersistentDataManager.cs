@@ -29,6 +29,8 @@ namespace ArenaTactics.Managers
         public bool lastBattleVictory = false;
         public int lastBattleGoldReward = 0;
 
+        private bool postBattleEffectsProcessed = false;
+
         private void Awake()
         {
             if (Instance == null)
@@ -135,6 +137,7 @@ namespace ArenaTactics.Managers
                 return;
             }
 
+            postBattleEffectsProcessed = false;
             Debug.Log($"Starting battle {battleCount + 1} with {Mathf.Max(activeSquad.Count, playerRoster.Count)} gladiators");
             SceneManager.LoadScene("Battle");
         }
@@ -156,12 +159,28 @@ namespace ArenaTactics.Managers
                 Debug.Log($"Battle {battleCount + 1} lost. Reward: {goldReward}g");
             }
 
-            ProcessPostBattleEffects();
+            if (!postBattleEffectsProcessed)
+            {
+                ProcessPostBattleEffects("OnBattleComplete");
+                postBattleEffectsProcessed = true;
+            }
+            else
+            {
+                Debug.LogWarning("ProcessPostBattleEffects already processed for this battle. Skipping duplicate call.");
+            }
             SceneManager.LoadScene("Shop");
         }
 
-        private void ProcessPostBattleEffects()
+        private void ProcessPostBattleEffects(string caller = "Unknown")
         {
+            Debug.Log($"=== ProcessPostBattleEffects START ({caller}) ===");
+            Debug.Log($"Guard flag before check: {postBattleEffectsProcessed}");
+            if (postBattleEffectsProcessed)
+            {
+                Debug.LogWarning($"[{caller}] BLOCKED by guard flag!");
+                return;
+            }
+            Debug.Log($"[{caller}] Processing effects for {playerRoster.Count} gladiators...");
             foreach (GladiatorInstance gladiator in playerRoster)
             {
                 if (gladiator == null)
@@ -169,14 +188,24 @@ namespace ArenaTactics.Managers
                     continue;
                 }
 
+                Debug.Log($"  {gladiator.templateData.gladiatorName}: Status={gladiator.status}, Injury={gladiator.injuryBattlesRemaining}, Decay={gladiator.decayBattlesRemaining}");
                 if (gladiator.status == GladiatorStatus.Injured)
                 {
+                    Debug.Log($"[{caller}] DECREMENTING injury for {gladiator.templateData.gladiatorName}");
+                    int before = gladiator.injuryBattlesRemaining;
+                    if (gladiator.injuryBattlesRemaining <= 0)
+                    {
+                        Debug.LogError($"ERROR: {gladiator.templateData.gladiatorName} is Injured but injuryBattlesRemaining is {gladiator.injuryBattlesRemaining}!");
+                    }
+                    Debug.Log($"  Before: {before}");
+                    Debug.Log($"  Stack trace: {UnityEngine.StackTraceUtility.ExtractStackTrace()}");
                     gladiator.injuryBattlesRemaining--;
+                    Debug.Log($"  After: {gladiator.injuryBattlesRemaining}");
                     if (gladiator.injuryBattlesRemaining <= 0)
                     {
                         gladiator.status = GladiatorStatus.Healthy;
                         gladiator.currentHP = gladiator.maxHP;
-                        Debug.Log($"{gladiator.templateData.gladiatorName} recovered from injury!");
+                        Debug.Log($"[{caller}] {gladiator.templateData.gladiatorName} recovered!");
                     }
                 }
 
@@ -186,17 +215,19 @@ namespace ArenaTactics.Managers
                     gladiator.decayBattlesRemaining > 0)
                 {
                     gladiator.decayBattlesRemaining--;
-                    Debug.Log($"{gladiator.templateData.gladiatorName} decay: {gladiator.decayBattlesRemaining} battles remaining");
+                    Debug.Log($"[{caller}] {gladiator.templateData.gladiatorName} decay: {gladiator.decayBattlesRemaining} battles remaining");
 
                     if (gladiator.decayBattlesRemaining <= 0)
                     {
                         gladiator.status = GladiatorStatus.Dead;
-                        Debug.Log($"{gladiator.templateData.gladiatorName} has completely decayed!");
+                        Debug.Log($"[{caller}] {gladiator.templateData.gladiatorName} has completely decayed!");
                     }
                 }
             }
 
-            Debug.Log("Post-battle effects processed");
+            postBattleEffectsProcessed = true;
+            Debug.Log($"Guard flag set to true by {caller}");
+            Debug.Log($"=== ProcessPostBattleEffects END ({caller}) ===");
         }
 
         public void InitializeTestData()

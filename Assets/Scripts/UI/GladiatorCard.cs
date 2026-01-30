@@ -52,6 +52,11 @@ namespace ArenaTactics.UI
                 return;
             }
 
+            Debug.Log($"=== UpdateDisplay for {gladiator.templateData.gladiatorName} ===");
+            Debug.Log($"  Status: {gladiator.status}");
+            Debug.Log($"  Injury: {gladiator.injuryBattlesRemaining}");
+            Debug.Log($"  GetStatusString(): {gladiator.GetStatusString()}");
+
             if (nameText != null)
             {
                 nameText.text = gladiator.templateData.gladiatorName;
@@ -80,8 +85,11 @@ namespace ArenaTactics.UI
 
             if (statusText != null)
             {
-                statusText.text = $"Status: {gladiator.GetStatusString()}";
+                string statusString = gladiator.GetStatusString();
+                Debug.Log($"Displaying status for {gladiator.templateData.gladiatorName}: {statusString}");
+                statusText.text = $"Status: {statusString}";
                 statusText.color = gladiator.GetStatusColor();
+                Debug.Log($"  StatusText set to: {statusText.text}");
             }
 
             if (decayText != null)

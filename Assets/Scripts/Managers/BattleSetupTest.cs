@@ -164,6 +164,16 @@ public class BattleSetupTest : MonoBehaviour
             {
                 continue;
             }
+            if (instance.status == GladiatorStatus.Dead)
+            {
+                Debug.LogWarning($"BattleSetupTest: Skipping dead gladiator {instance.templateData.gladiatorName}.");
+                continue;
+            }
+            if (instance.status == GladiatorStatus.Injured)
+            {
+                Debug.LogWarning($"BattleSetupTest: Skipping injured gladiator {instance.templateData.gladiatorName} ({instance.injuryBattlesRemaining} battles remaining).");
+                continue;
+            }
 
             int x = i % gridWidth;
             int y = Mathf.Min(i / gridWidth, 1);
