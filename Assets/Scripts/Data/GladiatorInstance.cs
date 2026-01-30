@@ -63,7 +63,7 @@ namespace ArenaTactics.Data
             status = GladiatorStatus.Healthy;
         }
 
-        private int CalculateMaxHP()
+        public int CalculateMaxHP()
         {
             if (templateData == null)
             {

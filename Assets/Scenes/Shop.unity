@@ -119,6 +119,75 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &42055057
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 42055059}
+  - component: {fileID: 42055058}
+  m_Layer: 0
+  m_Name: GladiatorGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &42055058
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 42055057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77af6132710d31e45a2af3629670933c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaTactics.Managers.GladiatorGenerator
+  availableClasses:
+  - {fileID: 11400000, guid: a1b2c3d4e5f60123456789abcdeff001, type: 2}
+  - {fileID: 11400000, guid: 779a85ab3f11cdf49a79b120780d6ad7, type: 2}
+  - {fileID: 11400000, guid: 130c0b850ae36b74ba919b9fd3ca00ee, type: 2}
+  - {fileID: 11400000, guid: 4cb3c5ed0528fcb4199a2d704588d8c7, type: 2}
+  - {fileID: 11400000, guid: d1d9a52446be0bd4a92957795afbb924, type: 2}
+  availableRaces:
+  - {fileID: 11400000, guid: 65768798a9bacbdcedfe0f1021324354, type: 2}
+  - {fileID: 11400000, guid: 32435465768798a9bacbdcedfe0f1021, type: 2}
+  - {fileID: 11400000, guid: 768798a9bacbdcedfe0f102132435465, type: 2}
+  - {fileID: 11400000, guid: 435465768798a9bacbdcedfe0f102132, type: 2}
+  - {fileID: 11400000, guid: 5465768798a9bacbdcedfe0f10213243, type: 2}
+  - {fileID: 11400000, guid: 98a9bacbdcedfe0f1021324354657687, type: 2}
+  - {fileID: 11400000, guid: 102132435465768798a9bacbdcedfe0f, type: 2}
+  - {fileID: 11400000, guid: 8798a9bacbdcedfe0f10213243546576, type: 2}
+  - {fileID: 11400000, guid: 2132435465768798a9bacbdcedfe0f10, type: 2}
+  - {fileID: 11400000, guid: a9bacbdcedfe0f102132435465768798, type: 2}
+  - {fileID: 11400000, guid: 0f5c6d7e8f90102030415263748596a7, type: 2}
+  - {fileID: 11400000, guid: dc2a3b4c5d6e7f8091a2b3c4d5e6f708, type: 2}
+  - {fileID: 11400000, guid: 1f6d7e8f90102030415263748596a7b8, type: 2}
+  - {fileID: 11400000, guid: ed3a4b5c6d7e8f901020304152637485, type: 2}
+  - {fileID: 11400000, guid: fe4b5c6d7e8f90102030415263748596, type: 2}
+  - {fileID: 11400000, guid: 3f8f90102030415263748596a7b8c9da, type: 2}
+  - {fileID: 11400000, guid: 2f7e8f90102030415263748596a7b8c9, type: 2}
+  - {fileID: 11400000, guid: cb1a2b3c4d5e6f7081920a1b2c3d4e5f, type: 2}
+--- !u!4 &42055059
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 42055057}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 511.04633, y: 0.00001, z: 3949.501}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &73821520
 GameObject:
   m_ObjectHideFlags: 0
@@ -2700,3 +2769,4 @@ SceneRoots:
   - {fileID: 536005596}
   - {fileID: 1806357077}
   - {fileID: 1480798743}
+  - {fileID: 42055059}
