@@ -14,6 +14,7 @@ namespace ArenaTactics.UI
         public TextMeshProUGUI priceText;
         public TextMeshProUGUI typeText;
         public Button buyButton;
+        public GameObject ownedIndicator;
 
         private WeaponData weapon;
         private ArmorData armor;
@@ -64,6 +65,9 @@ namespace ArenaTactics.UI
             price = CalculateWeaponPrice(weapon);
             UpdatePriceLabel();
 
+            ApplyOwnedState(PersistentDataManager.Instance != null &&
+                            PersistentDataManager.Instance.OwnsWeapon(weapon));
+
             if (buyButton != null)
             {
                 buyButton.onClick.RemoveAllListeners();
@@ -113,6 +117,9 @@ namespace ArenaTactics.UI
 
             price = CalculateArmorPrice(armor);
             UpdatePriceLabel();
+
+            ApplyOwnedState(PersistentDataManager.Instance != null &&
+                            PersistentDataManager.Instance.OwnsArmor(armor));
 
             if (buyButton != null)
             {
@@ -168,10 +175,31 @@ namespace ArenaTactics.UI
             price = CalculateSpellPrice(spell);
             UpdatePriceLabel();
 
+            ApplyOwnedState(PersistentDataManager.Instance != null &&
+                            PersistentDataManager.Instance.OwnsSpell(spell));
+
             if (buyButton != null)
             {
                 buyButton.onClick.RemoveAllListeners();
                 buyButton.onClick.AddListener(OnBuySpell);
+            }
+        }
+
+        private void ApplyOwnedState(bool owned)
+        {
+            if (ownedIndicator != null)
+            {
+                ownedIndicator.SetActive(owned);
+            }
+
+            if (buyButton != null)
+            {
+                buyButton.interactable = !owned;
+                TMP_Text buttonText = buyButton.GetComponentInChildren<TMP_Text>();
+                if (buttonText != null)
+                {
+                    buttonText.text = owned ? "OWNED" : "BUY";
+                }
             }
         }
 

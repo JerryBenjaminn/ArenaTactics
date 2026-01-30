@@ -105,7 +105,7 @@ namespace ArenaTactics.Managers
 
         public void AddWeaponToInventory(WeaponData weapon)
         {
-            if (weapon != null)
+            if (weapon != null && !ownedWeapons.Contains(weapon))
             {
                 ownedWeapons.Add(weapon);
                 Debug.Log($"Added {weapon.weaponName} to inventory");
@@ -114,7 +114,7 @@ namespace ArenaTactics.Managers
 
         public void AddArmorToInventory(ArmorData armor)
         {
-            if (armor != null)
+            if (armor != null && !ownedArmors.Contains(armor))
             {
                 ownedArmors.Add(armor);
                 Debug.Log($"Added {armor.armorName} to inventory");
@@ -123,11 +123,26 @@ namespace ArenaTactics.Managers
 
         public void AddSpellToInventory(SpellData spell)
         {
-            if (spell != null)
+            if (spell != null && !ownedSpells.Contains(spell))
             {
                 ownedSpells.Add(spell);
                 Debug.Log($"Added {spell.spellName} to inventory");
             }
+        }
+
+        public bool OwnsWeapon(WeaponData weapon)
+        {
+            return weapon != null && ownedWeapons.Contains(weapon);
+        }
+
+        public bool OwnsArmor(ArmorData armor)
+        {
+            return armor != null && ownedArmors.Contains(armor);
+        }
+
+        public bool OwnsSpell(SpellData spell)
+        {
+            return spell != null && ownedSpells.Contains(spell);
         }
 
         public void PrepareBattle()

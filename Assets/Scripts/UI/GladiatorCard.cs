@@ -16,10 +16,12 @@ namespace ArenaTactics.UI
         public TextMeshProUGUI decayText;
         public Image squadIndicator;
         public Button selectButton;
+        public Button equipButton;
 
         private GladiatorInstance gladiator;
         private RosterView rosterView;
         private bool isInSquad;
+        private GladiatorEquipmentPanel equipmentPanel;
 
         public void Setup(GladiatorInstance glad, bool inSquad, RosterView view)
         {
@@ -27,6 +29,7 @@ namespace ArenaTactics.UI
             gladiator = glad;
             isInSquad = inSquad;
             rosterView = view;
+            equipmentPanel = FindFirstObjectByType<GladiatorEquipmentPanel>();
 
             Debug.Log("Calling UpdateDisplay()...");
             UpdateDisplay();
@@ -40,6 +43,18 @@ namespace ArenaTactics.UI
             else
             {
                 Debug.LogWarning("selectButton is NULL!");
+            }
+
+            if (equipButton != null)
+            {
+                equipButton.onClick.RemoveAllListeners();
+                equipButton.onClick.AddListener(OnEquipClicked);
+                Debug.Log($"Equip button exists on card for {gladiator.templateData.gladiatorName}");
+                Debug.Log($"  Equip button has {equipButton.onClick.GetPersistentEventCount()} persistent listeners");
+            }
+            else
+            {
+                Debug.LogWarning($"Equip button is NULL on card for {gladiator.templateData.gladiatorName}");
             }
 
             Debug.Log("=== GladiatorCard.Setup() COMPLETE ===");
@@ -127,6 +142,36 @@ namespace ArenaTactics.UI
         private void OnSelectClicked()
         {
             rosterView.ToggleSquadSelection(gladiator);
+        }
+
+        private void OnEquipClicked()
+        {
+            Debug.Log($"=== OnEquipClicked for {gladiator?.templateData?.gladiatorName ?? "NULL"} ===");
+
+            if (gladiator == null)
+            {
+                Debug.LogError("Gladiator is NULL!");
+                return;
+            }
+
+            Debug.Log("Looking for GladiatorEquipmentPanel...");
+
+            if (equipmentPanel == null)
+            {
+                equipmentPanel = FindFirstObjectByType<GladiatorEquipmentPanel>(FindObjectsInactive.Include);
+                Debug.Log($"FindFirstObjectByType (include inactive) result: {(equipmentPanel != null ? equipmentPanel.name : "NULL")}");
+            }
+
+            if (equipmentPanel != null)
+            {
+                Debug.Log("Found panel, calling ShowGladiatorEquipment()");
+                equipmentPanel.ShowGladiatorEquipment(gladiator);
+                Debug.Log($"Panel active state after show: {equipmentPanel.gameObject.activeInHierarchy}");
+            }
+            else
+            {
+                Debug.LogError("GladiatorEquipmentPanel not found in scene!");
+            }
         }
     }
 }

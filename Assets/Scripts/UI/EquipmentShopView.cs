@@ -329,8 +329,10 @@ namespace ArenaTactics.UI
 
             if (dataManager.SpendGold(price))
             {
+                dataManager.AddWeaponToInventory(weapon);
                 Debug.Log($"Purchased weapon: {weapon.weaponName} for {price}g");
                 RefreshGold();
+                PopulateItems();
             }
             else
             {
@@ -347,8 +349,10 @@ namespace ArenaTactics.UI
 
             if (dataManager.SpendGold(price))
             {
+                dataManager.AddArmorToInventory(armor);
                 Debug.Log($"Purchased armor: {armor.armorName} for {price}g");
                 RefreshGold();
+                PopulateItems();
             }
             else
             {
@@ -365,8 +369,10 @@ namespace ArenaTactics.UI
 
             if (dataManager.SpendGold(price))
             {
+                dataManager.AddSpellToInventory(spell);
                 Debug.Log($"Purchased spell: {spell.spellName} for {price}g");
                 RefreshGold();
+                PopulateItems();
             }
             else
             {
