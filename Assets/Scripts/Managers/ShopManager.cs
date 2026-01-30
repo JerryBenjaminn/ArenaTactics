@@ -17,15 +17,17 @@ namespace ArenaTactics.Managers
         [Header("Tab System")]
         public Button recruitTabButton;
         public Button manageTabButton;
+        public Button equipmentTabButton;
         public GameObject recruitmentPanel;
         public GameObject rosterPanel;
+        public GameObject equipmentPanel;
 
         [Header("Tab Colors")]
         public Color activeTabColor = new Color(0.3f, 0.6f, 1f);
         public Color inactiveTabColor = new Color(0.5f, 0.5f, 0.5f);
 
         private PersistentDataManager dataManager;
-        private enum ShopTab { Recruit, Manage }
+        private enum ShopTab { Recruit, Manage, Equipment }
         private ShopTab currentTab = ShopTab.Recruit;
 
         private void Start()
@@ -84,6 +86,11 @@ namespace ArenaTactics.Managers
                 manageTabButton.onClick.AddListener(() => SwitchTab(ShopTab.Manage));
             }
 
+            if (equipmentTabButton != null)
+            {
+                equipmentTabButton.onClick.AddListener(() => SwitchTab(ShopTab.Equipment));
+            }
+
             if (startBattleButton != null)
             {
                 startBattleButton.onClick.AddListener(OnStartBattleClicked);
@@ -109,6 +116,11 @@ namespace ArenaTactics.Managers
                 rosterPanel.SetActive(tab == ShopTab.Manage);
             }
 
+            if (equipmentPanel != null)
+            {
+                equipmentPanel.SetActive(tab == ShopTab.Equipment);
+            }
+
             UpdateTabButtonColors();
 
             Debug.Log($"Switched to {tab} tab");
@@ -128,6 +140,13 @@ namespace ArenaTactics.Managers
                 ColorBlock colors = manageTabButton.colors;
                 colors.normalColor = currentTab == ShopTab.Manage ? activeTabColor : inactiveTabColor;
                 manageTabButton.colors = colors;
+            }
+
+            if (equipmentTabButton != null)
+            {
+                ColorBlock colors = equipmentTabButton.colors;
+                colors.normalColor = currentTab == ShopTab.Equipment ? activeTabColor : inactiveTabColor;
+                equipmentTabButton.colors = colors;
             }
         }
 
