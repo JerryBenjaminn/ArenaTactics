@@ -47,6 +47,17 @@ namespace ArenaTactics.UI
             Debug.Log("=== RosterView.Start() COMPLETE ===");
         }
 
+        private void OnEnable()
+        {
+            if (dataManager == null)
+            {
+                dataManager = PersistentDataManager.Instance;
+            }
+
+            Debug.Log("RosterView enabled - refreshing display");
+            RefreshRoster();
+        }
+
         public void RefreshRoster()
         {
             Debug.Log("=== RefreshRoster() CALLED ===");

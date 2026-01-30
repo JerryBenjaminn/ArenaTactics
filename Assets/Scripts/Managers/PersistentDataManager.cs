@@ -18,6 +18,7 @@ namespace ArenaTactics.Managers
         public List<GladiatorInstance> activeSquad = new List<GladiatorInstance>();
 
         [Header("Test Data")]
+        [SerializeField] private bool startWithTestGladiators = false;
         [SerializeField] private List<GladiatorData> initialRosterTemplates = new List<GladiatorData>();
 
         [Header("Inventory (Owned but not equipped)")]
@@ -237,6 +238,12 @@ namespace ArenaTactics.Managers
 
             playerRoster.Clear();
             activeSquad.Clear();
+
+            if (!startWithTestGladiators)
+            {
+                Debug.Log("Starting with empty roster (test gladiators disabled).");
+                return;
+            }
 
             List<GladiatorData> templates = new List<GladiatorData>();
             if (initialRosterTemplates != null && initialRosterTemplates.Count > 0)

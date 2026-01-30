@@ -205,12 +205,14 @@ namespace ArenaTactics.UI
                 if (rosterView != null)
                 {
                     rosterView.RefreshRoster();
+                    Debug.Log("Roster refreshed after purchase");
                 }
 
                 ShopManager shopManager = FindFirstObjectByType<ShopManager>();
                 if (shopManager != null)
                 {
                     shopManager.RefreshGoldDisplay();
+                    shopManager.RefreshSquadCount();
                 }
 
                 RefreshOfferDisplay(offer);
