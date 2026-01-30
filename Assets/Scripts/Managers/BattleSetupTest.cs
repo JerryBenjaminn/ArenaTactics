@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ArenaTactics.Data;
+using ArenaTactics.Managers;
 using UnityEngine;
 
 /// <summary>
@@ -67,7 +68,34 @@ public class BattleSetupTest : MonoBehaviour
             return;
         }
 
-        SpawnTestGladiators();
+        Debug.Log("=== Battle Setup: Loading Squad from Shop ===");
+
+        PersistentDataManager dataManager = PersistentDataManager.Instance;
+        if (dataManager == null)
+        {
+            Debug.LogError("BattleSetupTest: PersistentDataManager not found! Using fallback test data.");
+            SpawnTestGladiators();
+            InitializeBattleManager();
+            return;
+        }
+
+        List<GladiatorInstance> squad = dataManager.activeSquad;
+        if (squad == null || squad.Count == 0)
+        {
+            if (dataManager.playerRoster != null && dataManager.playerRoster.Count > 0)
+            {
+                Debug.LogWarning("BattleSetupTest: Active squad empty. Falling back to full roster.");
+                squad = dataManager.playerRoster;
+            }
+            else
+            {
+                Debug.LogError("BattleSetupTest: Active squad is empty and no roster available. Cannot start battle.");
+                return;
+            }
+        }
+
+        SpawnPlayerSquad(squad);
+        SpawnEnemyGladiators();
         InitializeBattleManager();
     }
 
@@ -109,6 +137,88 @@ public class BattleSetupTest : MonoBehaviour
 
         EquipTestWeapons(playerWarrior, playerRogue);
         Debug.Log($"BattleSetupTest: Spawned {spawnedGladiators.Count} gladiators.");
+    }
+
+    private void SpawnPlayerSquad(List<GladiatorInstance> squad)
+    {
+        spawnedGladiators.Clear();
+
+        if (playerGladiatorPrefab == null)
+        {
+            Debug.LogError("BattleSetupTest: Player gladiator prefab is not assigned.");
+            return;
+        }
+
+        if (squad == null || squad.Count == 0)
+        {
+            Debug.LogError("BattleSetupTest: No squad data provided.");
+            return;
+        }
+
+        int gridWidth = GridManager.Instance.GridWidth;
+
+        for (int i = 0; i < squad.Count; i++)
+        {
+            GladiatorInstance instance = squad[i];
+            if (instance == null || instance.templateData == null)
+            {
+                continue;
+            }
+
+            int x = i % gridWidth;
+            int y = Mathf.Min(i / gridWidth, 1);
+            Vector2Int spawnPos = new Vector2Int(x, y);
+
+            SpawnPlayerGladiator(instance, spawnPos);
+        }
+    }
+
+    private void SpawnPlayerGladiator(GladiatorInstance gladiatorInstance, Vector2Int gridPos)
+    {
+        if (playerGladiatorPrefab == null || gladiatorInstance == null || gladiatorInstance.templateData == null)
+        {
+            Debug.LogWarning("BattleSetupTest: Cannot spawn player gladiator, prefab or instance is null.");
+            return;
+        }
+
+        GameObject instance = Instantiate(playerGladiatorPrefab);
+        instance.name = gladiatorInstance.templateData.gladiatorName;
+
+        Gladiator gladiator = instance.GetComponent<Gladiator>();
+        if (gladiator == null)
+        {
+            Debug.LogError("BattleSetupTest: Spawned player prefab does not contain a Gladiator component.");
+            Destroy(instance);
+            return;
+        }
+
+        gladiator.InitializeFromInstance(gladiatorInstance, gridPos, true, true);
+        spawnedGladiators.Add(gladiator);
+
+        Debug.Log($"BattleSetupTest: Spawned player '{gladiatorInstance.templateData.gladiatorName}' at {gridPos}.");
+    }
+
+    private void SpawnEnemyGladiators()
+    {
+        if (enemyGladiatorPrefab == null)
+        {
+            Debug.LogError("BattleSetupTest: Enemy gladiator prefab is not assigned.");
+            return;
+        }
+
+        if (enemyWarriorData == null || enemyRogueData == null || enemyArcherData == null ||
+            enemyMageData == null || enemyTankData == null)
+        {
+            Debug.LogError("BattleSetupTest: One or more enemy GladiatorData assets are not assigned.");
+            return;
+        }
+
+        // Enemy gladiators (spawned off-grid; auto-deployed by DeploymentManager).
+        SpawnGladiator(enemyGladiatorPrefab, enemyWarriorData, new Vector2Int(0, 9), false, false);
+        SpawnGladiator(enemyGladiatorPrefab, enemyRogueData, new Vector2Int(1, 9), false, false);
+        SpawnGladiator(enemyGladiatorPrefab, enemyArcherData, new Vector2Int(2, 9), false, false);
+        SpawnGladiator(enemyGladiatorPrefab, enemyMageData, new Vector2Int(3, 9), false, false);
+        SpawnGladiator(enemyGladiatorPrefab, enemyTankData, new Vector2Int(4, 9), false, false);
     }
 
     private void EquipTestWeapons(Gladiator playerWarrior, Gladiator playerRogue)

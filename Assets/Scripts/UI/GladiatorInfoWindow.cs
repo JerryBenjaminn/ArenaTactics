@@ -291,12 +291,12 @@ public class GladiatorInfoWindow : MonoBehaviour
             statusText.text = "STATUS: LICH";
             statusText.color = new Color(0.8f, 0.2f, 1.0f, 1.0f);
         }
-        else if (currentGladiator.Status == Gladiator.GladiatorStatus.Injured)
+        else if (currentGladiator.Status == GladiatorStatus.Injured)
         {
             statusText.text = $"STATUS: INJURED ({currentGladiator.InjuryBattlesRemaining} battles)";
             statusText.color = Color.yellow;
         }
-        else if (currentGladiator.Status == Gladiator.GladiatorStatus.Dead)
+        else if (currentGladiator.Status == GladiatorStatus.Dead)
         {
             statusText.text = "STATUS: DEAD";
             statusText.color = Color.red;

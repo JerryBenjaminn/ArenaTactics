@@ -355,6 +355,11 @@ public class BattleManager : MonoBehaviour
     /// </summary>
     public void CheckVictoryConditions()
     {
+        if (battleState == BattleState.Victory || battleState == BattleState.Defeat)
+        {
+            return;
+        }
+
         int livingPlayers = 0;
         int livingEnemies = 0;
 
@@ -381,6 +386,7 @@ public class BattleManager : MonoBehaviour
             Debug.Log("BattleManager: Defeat! All player gladiators are down.");
             AwardSurvivalXP();
             ProcessPostBattleRecovery(allGladiators);
+            CompleteBattle(false);
         }
         else if (livingEnemies == 0 && livingPlayers > 0)
         {
@@ -388,7 +394,104 @@ public class BattleManager : MonoBehaviour
             Debug.Log("BattleManager: Victory! All enemy gladiators are down.");
             AwardSurvivalXP();
             ProcessPostBattleRecovery(allGladiators);
+            CompleteBattle(true);
         }
+    }
+
+    private void CompleteBattle(bool victory)
+    {
+        int goldReward = victory ? CalculateBattleReward() : 100;
+
+        ArenaTactics.Managers.PersistentDataManager dataManager = ArenaTactics.Managers.PersistentDataManager.Instance;
+        if (dataManager != null)
+        {
+            SaveBattleResultsToShop(dataManager);
+            dataManager.OnBattleComplete(victory, goldReward);
+        }
+        else
+        {
+            Debug.LogWarning("BattleManager: PersistentDataManager not found. Battle result not saved.");
+        }
+    }
+
+    private void SaveBattleResultsToShop(ArenaTactics.Managers.PersistentDataManager dataManager)
+    {
+        if (dataManager == null)
+        {
+            return;
+        }
+
+        Debug.Log("=== Saving Battle Results to Shop ===");
+
+        foreach (Gladiator gladiator in allGladiators)
+        {
+            if (gladiator == null || !gladiator.IsPlayerControlled || gladiator.linkedInstance == null)
+            {
+                continue;
+            }
+
+            if (gladiator.Data == null)
+            {
+                continue;
+            }
+
+            GladiatorInstance instance = gladiator.linkedInstance;
+
+            instance.currentLevel = gladiator.CurrentLevel;
+            instance.currentXP = gladiator.CurrentXP;
+            instance.currentHP = gladiator.CurrentHP;
+            instance.maxHP = gladiator.MaxHP;
+
+            instance.status = gladiator.Status;
+            instance.injuryBattlesRemaining = gladiator.InjuryBattlesRemaining;
+            instance.decayBattlesRemaining = gladiator.DecayBattlesRemaining;
+            instance.startingDecayBattles = gladiator.StartingDecayBattles;
+
+            instance.isAscended = gladiator.IsAscended;
+            instance.ascendedFormName = gladiator.AscendedFormName;
+
+            instance.equippedWeapon = gladiator.EquippedWeapon;
+            instance.equippedArmor = gladiator.EquippedArmor;
+
+            if (instance.knownSpells != null && gladiator.KnownSpells != null)
+            {
+                for (int i = 0; i < instance.knownSpells.Length; i++)
+                {
+                    instance.knownSpells[i] = i < gladiator.KnownSpells.Count ? gladiator.KnownSpells[i] : null;
+                }
+            }
+
+            Debug.Log($"Saved: {gladiator.Data.gladiatorName} - Lvl {gladiator.CurrentLevel}, XP {gladiator.CurrentXP}, HP {gladiator.CurrentHP}/{gladiator.MaxHP}, Status: {gladiator.Status}");
+        }
+
+        Debug.Log("=== Battle Results Saved ===");
+    }
+
+    private int CalculateBattleReward()
+    {
+        int baseReward = 500;
+        int enemyLevelSum = 0;
+        int enemyCount = 0;
+
+        foreach (Gladiator gladiator in allGladiators)
+        {
+            if (gladiator == null || gladiator.Data == null)
+            {
+                continue;
+            }
+
+            if (gladiator.Data.team == Team.Enemy)
+            {
+                enemyLevelSum += gladiator.CurrentLevel;
+                enemyCount++;
+            }
+        }
+
+        int levelBonus = enemyCount > 0 ? (enemyLevelSum / enemyCount) * 50 : 0;
+        int totalReward = baseReward + levelBonus;
+
+        Debug.Log($"BattleManager: Battle reward = {totalReward}g");
+        return totalReward;
     }
 
     public void ProcessPostBattleRecovery(List<Gladiator> roster)
@@ -405,7 +508,7 @@ public class BattleManager : MonoBehaviour
                 continue;
             }
 
-            if (gladiator.Status == Gladiator.GladiatorStatus.Injured)
+            if (gladiator.Status == GladiatorStatus.Injured)
             {
                 gladiator.DecrementInjuryTimer();
             }

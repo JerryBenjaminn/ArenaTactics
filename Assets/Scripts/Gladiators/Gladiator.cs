@@ -10,12 +10,6 @@ using UnityEngine.UI;
 /// </summary>
 public class Gladiator : MonoBehaviour
 {
-    public enum GladiatorStatus
-    {
-        Healthy,
-        Injured,
-        Dead
-    }
 
     [Header("Data")]
     [SerializeField]
@@ -116,6 +110,9 @@ public class Gladiator : MonoBehaviour
     [SerializeField]
     private string ascendedFormName = string.Empty;
 
+    [System.NonSerialized]
+    public GladiatorInstance linkedInstance;
+
     // Cached highlight data so we can restore tiles after highlighting.
     private readonly Dictionary<GridCell, Material> highlightedCells = new Dictionary<GridCell, Material>();
     private readonly Dictionary<Gladiator, int> damageContributors = new Dictionary<Gladiator, int>();
@@ -144,6 +141,8 @@ public class Gladiator : MonoBehaviour
     public int InjuryBattlesRemaining => injuryBattlesRemaining;
 
     public int DecayBattlesRemaining => decayBattlesRemaining;
+
+    public int StartingDecayBattles => startingDecayBattles;
 
     public bool IsAscended => isAscended;
 
@@ -311,6 +310,68 @@ public class Gladiator : MonoBehaviour
         }
 
         CreateHealthBar();
+    }
+
+    public void InitializeFromInstance(GladiatorInstance instance, Vector2Int startPos, bool playerControlled, bool placeOnGrid = true)
+    {
+        if (instance == null || instance.templateData == null)
+        {
+            Debug.LogWarning("Gladiator: Cannot initialize from instance, template data is missing.");
+            return;
+        }
+
+        Initialize(instance.templateData, startPos, playerControlled, placeOnGrid);
+
+        linkedInstance = instance;
+        currentLevel = instance.currentLevel;
+        currentXP = instance.currentXP;
+        status = instance.status;
+        injuryBattlesRemaining = instance.injuryBattlesRemaining;
+        decayBattlesRemaining = instance.decayBattlesRemaining;
+        startingDecayBattles = instance.startingDecayBattles;
+        isAscended = instance.isAscended;
+        ascendedFormName = instance.ascendedFormName;
+
+        if (knownSpells != null)
+        {
+            knownSpells.Clear();
+            if (instance.knownSpells != null)
+            {
+                foreach (SpellData spell in instance.knownSpells)
+                {
+                    if (spell != null)
+                    {
+                        knownSpells.Add(spell);
+                    }
+                }
+            }
+        }
+
+        if (instance.equippedWeapon != null)
+        {
+            EquipWeapon(instance.equippedWeapon);
+        }
+        else
+        {
+            UnequipWeapon();
+        }
+
+        if (instance.equippedArmor != null)
+        {
+            EquipArmor(instance.equippedArmor);
+        }
+        else
+        {
+            UnequipArmor();
+        }
+
+        currentHP = Mathf.Clamp(instance.currentHP, 0, MaxHP);
+        currentSpellSlots = MaxSpellSlots;
+
+        if (isAscended)
+        {
+            ApplyLichVisuals();
+        }
     }
 
     /// <summary>
