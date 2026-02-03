@@ -58,6 +58,10 @@ namespace ArenaTactics.UI
             }
 
             List<TournamentManager.TeamStanding> standings = tournamentManager.GetStandings();
+            foreach (TournamentManager.TeamStanding standing in standings)
+            {
+                Debug.Log($"[TournamentView] {standing.teamName}: Gold={standing.gold}g");
+            }
             ClearStandings();
 
             for (int i = 0; i < standings.Count; i++)
@@ -113,6 +117,14 @@ namespace ArenaTactics.UI
                 return;
             }
 
+            SeasonData.Match nextMatch = FindNextMatch(tournamentManager.currentSeason);
+            if (nextMatch == null)
+            {
+                Debug.LogWarning("[TournamentView] No available match to start.");
+                return;
+            }
+
+            tournamentManager.SetActiveMatch(nextMatch);
             SceneManager.LoadScene("Battle");
         }
 
@@ -120,20 +132,20 @@ namespace ArenaTactics.UI
         {
             if (season.phase == SeasonData.SeasonPhase.Completed)
             {
-                return $"Season Complete! Champion: {season.finals?.winnerId ?? "TBD"}";
+                string championName = season.finals != null ? tournamentManager.GetTeamName(season.finals.winnerId) : "TBD";
+                return $"Season Complete! Champion: {championName}";
             }
 
-            SeasonData.Match nextMatch = FindNextMatch(season);
+            SeasonData.Match nextMatch = tournamentManager.GetCurrentMatch();
             if (nextMatch == null)
             {
                 return "No upcoming matches.";
             }
 
-            string opponent = nextMatch.team1Id == TournamentManager.PlayerTeamId
-                ? nextMatch.team2Id
-                : nextMatch.team1Id;
+            string opponentId = tournamentManager.GetPlayerOpponentId(nextMatch);
+            string opponentName = tournamentManager.GetTeamName(opponentId);
 
-            return $"NEXT MATCH: YOU vs {opponent}";
+            return $"NEXT MATCH: YOU vs {opponentName}";
         }
 
         private SeasonData.Match FindNextMatch(SeasonData season)
@@ -174,13 +186,13 @@ namespace ArenaTactics.UI
             }
 
             string semi1 = season.semifinal1 != null
-                ? $"{season.semifinal1.team1Id} vs {season.semifinal1.team2Id}"
+                ? $"{tournamentManager.GetTeamName(season.semifinal1.team1Id)} vs {tournamentManager.GetTeamName(season.semifinal1.team2Id)}"
                 : "TBD";
             string semi2 = season.semifinal2 != null
-                ? $"{season.semifinal2.team1Id} vs {season.semifinal2.team2Id}"
+                ? $"{tournamentManager.GetTeamName(season.semifinal2.team1Id)} vs {tournamentManager.GetTeamName(season.semifinal2.team2Id)}"
                 : "TBD";
             string finals = season.finals != null
-                ? $"{season.finals.team1Id} vs {season.finals.team2Id}"
+                ? $"{tournamentManager.GetTeamName(season.finals.team1Id)} vs {tournamentManager.GetTeamName(season.finals.team2Id)}"
                 : "TBD";
 
             return $"SEMIFINALS: {semi1} | {semi2}\nFINALS: {finals}";
@@ -214,6 +226,10 @@ namespace ArenaTactics.UI
                 texts[1].text = standing.teamName;
                 texts[2].text = $"{standing.wins}-{standing.losses}";
                 texts[3].text = $"{standing.points}";
+            }
+            if (texts.Length >= 5)
+            {
+                texts[4].text = $"{standing.gold}g";
             }
 
             if (standing.teamId == TournamentManager.PlayerTeamId)

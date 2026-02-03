@@ -28,6 +28,9 @@ namespace ArenaTactics.Managers
         private int playerLosses;
         private int playerPoints;
 
+        private string activeMatchTeam1Id;
+        private string activeMatchTeam2Id;
+
         private void Awake()
         {
             if (instance == null)
@@ -53,6 +56,8 @@ namespace ArenaTactics.Managers
             playerWins = 0;
             playerLosses = 0;
             playerPoints = 0;
+            activeMatchTeam1Id = string.Empty;
+            activeMatchTeam2Id = string.Empty;
 
             CreateAiTeams();
             CreateSchedule();
@@ -63,6 +68,56 @@ namespace ArenaTactics.Managers
         public bool HasActiveSeason()
         {
             return currentSeason != null && currentSeason.schedule != null && currentSeason.schedule.Count > 0;
+        }
+
+        public bool HasActiveMatch()
+        {
+            return !string.IsNullOrEmpty(activeMatchTeam1Id) && !string.IsNullOrEmpty(activeMatchTeam2Id);
+        }
+
+        public void SetActiveMatch(SeasonData.Match match)
+        {
+            if (match == null)
+            {
+                activeMatchTeam1Id = string.Empty;
+                activeMatchTeam2Id = string.Empty;
+                return;
+            }
+
+            activeMatchTeam1Id = match.team1Id;
+            activeMatchTeam2Id = match.team2Id;
+        }
+
+        public void ClearActiveMatch()
+        {
+            activeMatchTeam1Id = string.Empty;
+            activeMatchTeam2Id = string.Empty;
+        }
+
+        public AITeam GetCurrentOpponentTeam()
+        {
+            if (!HasActiveMatch())
+            {
+                return null;
+            }
+
+            string opponentId = activeMatchTeam1Id == PlayerTeamId ? activeMatchTeam2Id : activeMatchTeam1Id;
+            if (opponentId == PlayerTeamId)
+            {
+                return null;
+            }
+
+            return aiTeams.FirstOrDefault(t => t.teamId == opponentId);
+        }
+
+        public string GetActiveMatchTeam1Id()
+        {
+            return activeMatchTeam1Id;
+        }
+
+        public string GetActiveMatchTeam2Id()
+        {
+            return activeMatchTeam2Id;
         }
 
         public void RecordMatchResult(string winnerId, string loserId)
@@ -92,13 +147,14 @@ namespace ArenaTactics.Managers
 
         public List<TeamStanding> GetStandings()
         {
+            int playerGold = GetPlayerGoldEarned();
             List<TeamStanding> standings = new List<TeamStanding>
             {
-                new TeamStanding(PlayerTeamId, "Player", playerWins, playerLosses, playerPoints)
+                new TeamStanding(PlayerTeamId, "Player", playerWins, playerLosses, playerPoints, playerGold)
             };
 
             standings.AddRange(aiTeams.Select(t =>
-                new TeamStanding(t.teamId, t.teamName, t.wins, t.losses, t.points)));
+                new TeamStanding(t.teamId, t.teamName, t.wins, t.losses, t.points, t.goldEarned)));
 
             return standings
                 .OrderByDescending(s => s.points)
@@ -126,6 +182,76 @@ namespace ArenaTactics.Managers
             currentSeason.finals = null;
 
             Debug.Log("[Tournament] Playoffs started: 1v4 and 2v3.");
+        }
+
+        public SeasonData.Match GetCurrentMatch()
+        {
+            if (currentSeason == null)
+            {
+                return null;
+            }
+
+            if (currentSeason.phase == SeasonData.SeasonPhase.RegularSeason)
+            {
+                return currentSeason.schedule.FirstOrDefault(m => !m.isCompleted &&
+                                                                  (m.team1Id == PlayerTeamId || m.team2Id == PlayerTeamId));
+            }
+
+            if (currentSeason.phase == SeasonData.SeasonPhase.Playoffs)
+            {
+                if (currentSeason.semifinal1 != null && !currentSeason.semifinal1.isCompleted &&
+                    (currentSeason.semifinal1.team1Id == PlayerTeamId || currentSeason.semifinal1.team2Id == PlayerTeamId))
+                {
+                    return currentSeason.semifinal1;
+                }
+                if (currentSeason.semifinal2 != null && !currentSeason.semifinal2.isCompleted &&
+                    (currentSeason.semifinal2.team1Id == PlayerTeamId || currentSeason.semifinal2.team2Id == PlayerTeamId))
+                {
+                    return currentSeason.semifinal2;
+                }
+                if (currentSeason.finals != null && !currentSeason.finals.isCompleted &&
+                    (currentSeason.finals.team1Id == PlayerTeamId || currentSeason.finals.team2Id == PlayerTeamId))
+                {
+                    return currentSeason.finals;
+                }
+            }
+
+            return null;
+        }
+
+        public string GetPlayerOpponentId(SeasonData.Match match)
+        {
+            if (match == null)
+            {
+                return string.Empty;
+            }
+
+            if (match.team1Id == PlayerTeamId)
+            {
+                return match.team2Id;
+            }
+            if (match.team2Id == PlayerTeamId)
+            {
+                return match.team1Id;
+            }
+
+            return string.Empty;
+        }
+
+        public string GetTeamName(string teamId)
+        {
+            if (string.IsNullOrEmpty(teamId))
+            {
+                return "Unknown";
+            }
+
+            if (teamId == PlayerTeamId)
+            {
+                return "YOU";
+            }
+
+            AITeam team = aiTeams.FirstOrDefault(t => t.teamId == teamId);
+            return team != null ? team.teamName : teamId;
         }
 
         private void UpdatePlayoffProgress()
@@ -180,6 +306,13 @@ namespace ArenaTactics.Managers
                     team.roster = roster;
                 }
             }
+        }
+
+        private int GetPlayerGoldEarned()
+        {
+            return matchResults
+                .Where(r => r.winnerId == PlayerTeamId)
+                .Sum(r => r.goldReward);
         }
 
         private void CreateSchedule()
@@ -303,14 +436,16 @@ namespace ArenaTactics.Managers
             public int wins;
             public int losses;
             public int points;
+            public int gold;
 
-            public TeamStanding(string id, string name, int w, int l, int p)
+            public TeamStanding(string id, string name, int w, int l, int p, int g)
             {
                 teamId = id;
                 teamName = name;
                 wins = w;
                 losses = l;
                 points = p;
+                gold = g;
             }
 
             public float GetWinPercentage()

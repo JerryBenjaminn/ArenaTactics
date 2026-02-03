@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using ArenaTactics.Data;
+using ArenaTactics.Managers;
 using UnityEngine;
 
 /// <summary>
@@ -405,6 +406,20 @@ public class BattleManager : MonoBehaviour
         ArenaTactics.Managers.PersistentDataManager dataManager = ArenaTactics.Managers.PersistentDataManager.Instance;
         if (dataManager != null)
         {
+            TournamentManager tournamentManager = FindFirstObjectByType<TournamentManager>(FindObjectsInactive.Include);
+            if (tournamentManager != null && tournamentManager.HasActiveMatch())
+            {
+                string winnerId = victory ? TournamentManager.PlayerTeamId : tournamentManager.GetCurrentOpponentTeam()?.teamId;
+                string loserId = victory ? tournamentManager.GetCurrentOpponentTeam()?.teamId : TournamentManager.PlayerTeamId;
+
+                if (!string.IsNullOrEmpty(winnerId) && !string.IsNullOrEmpty(loserId))
+                {
+                    tournamentManager.RecordMatchResult(winnerId, loserId);
+                }
+
+                tournamentManager.ClearActiveMatch();
+            }
+
             SaveBattleResultsToShop(dataManager);
             dataManager.OnBattleComplete(victory, goldReward);
         }

@@ -220,6 +220,22 @@ public class BattleSetupTest : MonoBehaviour
             return;
         }
 
+        TournamentManager tournamentManager = FindFirstObjectByType<TournamentManager>(FindObjectsInactive.Include);
+        if (tournamentManager != null && tournamentManager.HasActiveMatch())
+        {
+            AITeam opponent = tournamentManager.GetCurrentOpponentTeam();
+            if (opponent == null || opponent.roster == null || opponent.roster.Count == 0)
+            {
+                Debug.LogWarning("[BattleSetupTest] Tournament opponent missing roster, falling back to procedural generation.");
+            }
+            else
+            {
+                Debug.Log($"[BattleSetupTest] Spawning tournament opponent: {opponent.teamName}");
+                SpawnEnemyRoster(opponent.roster);
+                return;
+            }
+        }
+
         if (enemyTeamGenerator == null)
         {
             enemyTeamGenerator = FindFirstObjectByType<EnemyTeamGenerator>(FindObjectsInactive.Include);
@@ -258,6 +274,28 @@ public class BattleSetupTest : MonoBehaviour
         }
 
         Debug.Log($"[BattleSetupTest] Spawned {enemyTeam.Count} enemy gladiators");
+    }
+
+    private void SpawnEnemyRoster(List<GladiatorInstance> roster)
+    {
+        if (roster == null || roster.Count == 0)
+        {
+            return;
+        }
+
+        Vector2Int[] enemyPositions = new Vector2Int[]
+        {
+            new Vector2Int(0, 9),
+            new Vector2Int(1, 9),
+            new Vector2Int(2, 9),
+            new Vector2Int(3, 9),
+            new Vector2Int(4, 9)
+        };
+
+        for (int i = 0; i < roster.Count && i < enemyPositions.Length; i++)
+        {
+            SpawnEnemyGladiator(roster[i], enemyPositions[i]);
+        }
     }
 
     private void SpawnEnemyGladiator(GladiatorInstance gladiatorInstance, Vector2Int gridPos)
