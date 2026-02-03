@@ -15,6 +15,8 @@ namespace ArenaTactics.Data
 
         public SeasonPhase phase = SeasonPhase.RegularSeason;
         public List<Match> schedule = new List<Match>();
+        public int currentMatchIndex = 0;
+        public List<MatchResult> results = new List<MatchResult>();
 
         public Match semifinal1;
         public Match semifinal2;

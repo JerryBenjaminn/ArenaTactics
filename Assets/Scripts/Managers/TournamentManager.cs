@@ -50,6 +50,8 @@ namespace ArenaTactics.Managers
             currentSeasonNumber = seasonNum;
             currentSeason = new SeasonData();
             currentSeason.phase = SeasonData.SeasonPhase.RegularSeason;
+            currentSeason.currentMatchIndex = 0;
+            currentSeason.results = new List<MatchResult>();
 
             aiTeams.Clear();
             matchResults.Clear();
@@ -128,7 +130,12 @@ namespace ArenaTactics.Managers
             }
 
             int goldReward = GetGoldRewardForPhase();
-            matchResults.Add(new MatchResult(winnerId, loserId, winnerId, loserId, goldReward));
+            MatchResult result = new MatchResult(winnerId, loserId, winnerId, loserId, goldReward);
+            matchResults.Add(result);
+            if (currentSeason != null)
+            {
+                currentSeason.results.Add(result);
+            }
 
             UpdateTeamRecord(winnerId, loserId, goldReward);
             MarkMatchComplete(winnerId, loserId);
@@ -137,6 +144,16 @@ namespace ArenaTactics.Managers
                 currentSeason.schedule.All(m => m.isCompleted))
             {
                 StartPlayoffs();
+            }
+            else if (currentSeason.phase == SeasonData.SeasonPhase.RegularSeason)
+            {
+                currentSeason.currentMatchIndex = GetNextMatchIndex(currentSeason.currentMatchIndex);
+                SimulateAIMatches();
+                if (currentSeason.currentMatchIndex >= currentSeason.schedule.Count)
+                {
+                    Debug.Log("[Tournament] Regular season complete! Generating playoffs...");
+                    StartPlayoffs();
+                }
             }
 
             if (currentSeason.phase == SeasonData.SeasonPhase.Playoffs)
@@ -337,6 +354,106 @@ namespace ArenaTactics.Managers
                 rotation.RemoveAt(rotation.Count - 1);
                 rotation.Insert(1, last);
             }
+        }
+
+        private void SimulateAIMatches()
+        {
+            if (currentSeason == null || currentSeason.phase != SeasonData.SeasonPhase.RegularSeason)
+            {
+                return;
+            }
+
+            Debug.Log("[Tournament] Simulating AI matches...");
+            int simulatedCount = 0;
+
+            currentSeason.currentMatchIndex = GetNextMatchIndex(currentSeason.currentMatchIndex);
+
+            while (currentSeason.currentMatchIndex < currentSeason.schedule.Count)
+            {
+                SeasonData.Match nextMatch = currentSeason.schedule[currentSeason.currentMatchIndex];
+                if (IsPlayerMatch(nextMatch))
+                {
+                    break;
+                }
+
+                SimulateSingleMatch(nextMatch);
+                simulatedCount++;
+                currentSeason.currentMatchIndex++;
+            }
+
+            Debug.Log($"[Tournament] Simulated {simulatedCount} AI matches");
+        }
+
+        private void SimulateSingleMatch(SeasonData.Match match)
+        {
+            if (match == null || match.isCompleted)
+            {
+                return;
+            }
+
+            AITeam team1 = GetAITeam(match.team1Id);
+            AITeam team2 = GetAITeam(match.team2Id);
+
+            float team1Budget = team1 != null ? team1.currentBudget : 2000f;
+            float team2Budget = team2 != null ? team2.currentBudget : 2000f;
+            float team1WinChance = team1Budget / Mathf.Max(1f, team1Budget + team2Budget);
+
+            bool team1Wins = Random.value < team1WinChance;
+            string winnerId = team1Wins ? match.team1Id : match.team2Id;
+            string loserId = team1Wins ? match.team2Id : match.team1Id;
+
+            int goldReward = GetGoldRewardForPhase();
+            MatchResult result = new MatchResult(match.team1Id, match.team2Id, winnerId, loserId, goldReward);
+            matchResults.Add(result);
+            if (currentSeason != null)
+            {
+                currentSeason.results.Add(result);
+            }
+
+            match.isCompleted = true;
+            match.winnerId = winnerId;
+
+            UpdateTeamRecord(winnerId, loserId, goldReward);
+
+            Debug.Log($"[Tournament] Simulated: {GetTeamName(winnerId)} defeats {GetTeamName(loserId)}");
+        }
+
+        private bool IsPlayerMatch(SeasonData.Match match)
+        {
+            if (match == null)
+            {
+                return false;
+            }
+
+            return match.team1Id == PlayerTeamId || match.team2Id == PlayerTeamId;
+        }
+
+        private int GetNextMatchIndex(int startIndex)
+        {
+            if (currentSeason == null)
+            {
+                return 0;
+            }
+
+            for (int i = Mathf.Max(0, startIndex); i < currentSeason.schedule.Count; i++)
+            {
+                if (!currentSeason.schedule[i].isCompleted)
+                {
+                    return i;
+                }
+            }
+
+            return currentSeason.schedule.Count;
+        }
+
+        private AITeam GetAITeam(string teamId)
+        {
+            if (string.IsNullOrEmpty(teamId) || teamId == PlayerTeamId)
+            {
+                return null;
+            }
+
+            return aiTeams.FirstOrDefault(t => t.teamId == teamId);
         }
 
         private void UpdateTeamRecord(string winnerId, string loserId, int goldReward)
