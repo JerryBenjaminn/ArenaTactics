@@ -18,16 +18,18 @@ namespace ArenaTactics.Managers
         public Button recruitTabButton;
         public Button manageTabButton;
         public Button equipmentTabButton;
+        public Button tournamentTabButton;
         public GameObject recruitmentPanel;
         public GameObject rosterPanel;
         public GameObject equipmentPanel;
+        public GameObject tournamentPanel;
 
         [Header("Tab Colors")]
         public Color activeTabColor = new Color(0.3f, 0.6f, 1f);
         public Color inactiveTabColor = new Color(0.5f, 0.5f, 0.5f);
 
         private PersistentDataManager dataManager;
-        private enum ShopTab { Recruit, Manage, Equipment }
+        private enum ShopTab { Recruit, Manage, Equipment, Tournament }
         private ShopTab currentTab = ShopTab.Recruit;
 
         private void Start()
@@ -58,6 +60,23 @@ namespace ArenaTactics.Managers
             RefreshBattleCount();
             RefreshSquadCount();
 
+            TournamentManager tournamentManager = FindFirstObjectByType<TournamentManager>(FindObjectsInactive.Include);
+            if (tournamentManager == null)
+            {
+                Debug.LogWarning("[ShopManager] TournamentManager not found in scene!");
+            }
+            else if (!tournamentManager.HasActiveSeason())
+            {
+                tournamentManager.StartNewSeason(1);
+                Debug.Log("[ShopManager] Tournament season initialized");
+            }
+
+            TournamentView tournamentView = FindFirstObjectByType<TournamentView>(FindObjectsInactive.Include);
+            if (tournamentView != null)
+            {
+                tournamentView.RefreshUI();
+            }
+
             if (dataManager.battleCount == 0)
             {
                 Debug.Log("Welcome to the shop! You have 2000 gold to start.");
@@ -71,7 +90,7 @@ namespace ArenaTactics.Managers
                 Debug.Log("ShopManager: Roster refreshed on shop start.");
             }
 
-            SwitchTab(ShopTab.Recruit);
+            SwitchTab(ShopTab.Tournament);
         }
 
         private void SetupButtons()
@@ -89,6 +108,11 @@ namespace ArenaTactics.Managers
             if (equipmentTabButton != null)
             {
                 equipmentTabButton.onClick.AddListener(() => SwitchTab(ShopTab.Equipment));
+            }
+
+            if (tournamentTabButton != null)
+            {
+                tournamentTabButton.onClick.AddListener(() => SwitchTab(ShopTab.Tournament));
             }
 
             if (startBattleButton != null)
@@ -127,6 +151,11 @@ namespace ArenaTactics.Managers
                 equipmentPanel.SetActive(tab == ShopTab.Equipment);
             }
 
+            if (tournamentPanel != null)
+            {
+                tournamentPanel.SetActive(tab == ShopTab.Tournament);
+            }
+
             UpdateTabButtonColors();
 
             Debug.Log($"Switched to {tab} tab");
@@ -153,6 +182,13 @@ namespace ArenaTactics.Managers
                 ColorBlock colors = equipmentTabButton.colors;
                 colors.normalColor = currentTab == ShopTab.Equipment ? activeTabColor : inactiveTabColor;
                 equipmentTabButton.colors = colors;
+            }
+
+            if (tournamentTabButton != null)
+            {
+                ColorBlock colors = tournamentTabButton.colors;
+                colors.normalColor = currentTab == ShopTab.Tournament ? activeTabColor : inactiveTabColor;
+                tournamentTabButton.colors = colors;
             }
         }
 

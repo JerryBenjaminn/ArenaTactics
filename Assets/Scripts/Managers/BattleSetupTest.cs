@@ -48,6 +48,10 @@ public class BattleSetupTest : MonoBehaviour
     [SerializeField]
     private GladiatorData enemyTankData;
 
+    [Header("Enemy Generation")]
+    [SerializeField]
+    private EnemyTeamGenerator enemyTeamGenerator;
+
     [Header("Test Weapons")]
     [SerializeField]
     private WeaponData basicSword;
@@ -216,19 +220,69 @@ public class BattleSetupTest : MonoBehaviour
             return;
         }
 
-        if (enemyWarriorData == null || enemyRogueData == null || enemyArcherData == null ||
-            enemyMageData == null || enemyTankData == null)
+        if (enemyTeamGenerator == null)
         {
-            Debug.LogError("BattleSetupTest: One or more enemy GladiatorData assets are not assigned.");
+            enemyTeamGenerator = FindFirstObjectByType<EnemyTeamGenerator>(FindObjectsInactive.Include);
+        }
+        if (enemyTeamGenerator == null)
+        {
+            Debug.LogError("BattleSetupTest: EnemyTeamGenerator reference missing.");
             return;
         }
 
-        // Enemy gladiators (spawned off-grid; auto-deployed by DeploymentManager).
-        SpawnGladiator(enemyGladiatorPrefab, enemyWarriorData, new Vector2Int(0, 9), false, false);
-        SpawnGladiator(enemyGladiatorPrefab, enemyRogueData, new Vector2Int(1, 9), false, false);
-        SpawnGladiator(enemyGladiatorPrefab, enemyArcherData, new Vector2Int(2, 9), false, false);
-        SpawnGladiator(enemyGladiatorPrefab, enemyMageData, new Vector2Int(3, 9), false, false);
-        SpawnGladiator(enemyGladiatorPrefab, enemyTankData, new Vector2Int(4, 9), false, false);
+        int battleCount = PersistentDataManager.Instance != null
+            ? PersistentDataManager.Instance.battleCount
+            : 0;
+
+        Debug.Log($"[BattleSetupTest] Generating enemy team for battle #{battleCount}");
+
+        List<GladiatorInstance> enemyTeam = enemyTeamGenerator.GenerateEnemyTeam(battleCount);
+        if (enemyTeam == null || enemyTeam.Count == 0)
+        {
+            Debug.LogError("[BattleSetupTest] Failed to generate enemy team.");
+            return;
+        }
+
+        Vector2Int[] enemyPositions = new Vector2Int[]
+        {
+            new Vector2Int(0, 9),
+            new Vector2Int(1, 9),
+            new Vector2Int(2, 9),
+            new Vector2Int(3, 9),
+            new Vector2Int(4, 9)
+        };
+
+        for (int i = 0; i < enemyTeam.Count && i < enemyPositions.Length; i++)
+        {
+            SpawnEnemyGladiator(enemyTeam[i], enemyPositions[i]);
+        }
+
+        Debug.Log($"[BattleSetupTest] Spawned {enemyTeam.Count} enemy gladiators");
+    }
+
+    private void SpawnEnemyGladiator(GladiatorInstance gladiatorInstance, Vector2Int gridPos)
+    {
+        if (enemyGladiatorPrefab == null || gladiatorInstance == null || gladiatorInstance.templateData == null)
+        {
+            Debug.LogWarning("BattleSetupTest: Cannot spawn enemy gladiator, prefab or instance is null.");
+            return;
+        }
+
+        GameObject instance = Instantiate(enemyGladiatorPrefab);
+        instance.name = $"Enemy_{gladiatorInstance.templateData.gladiatorName}";
+
+        Gladiator gladiator = instance.GetComponent<Gladiator>();
+        if (gladiator == null)
+        {
+            Debug.LogError("BattleSetupTest: Spawned enemy prefab does not contain a Gladiator component.");
+            Destroy(instance);
+            return;
+        }
+
+        gladiator.InitializeFromInstance(gladiatorInstance, gridPos, false, false);
+        spawnedGladiators.Add(gladiator);
+
+        Debug.Log($"BattleSetupTest: Spawned enemy '{gladiatorInstance.templateData.gladiatorName}' at {gridPos}.");
     }
 
     private void EquipTestWeapons(Gladiator playerWarrior, Gladiator playerRogue)

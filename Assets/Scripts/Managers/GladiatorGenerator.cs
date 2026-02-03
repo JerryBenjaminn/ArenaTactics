@@ -6,6 +6,10 @@ namespace ArenaTactics.Managers
 {
     public class GladiatorGenerator : MonoBehaviour
     {
+        private static GladiatorGenerator instance;
+
+        public static GladiatorGenerator Instance => instance;
+
         [Header("Data Sources")]
         public GladiatorClass[] availableClasses;
         public RaceData[] availableRaces;
@@ -20,6 +24,17 @@ namespace ArenaTactics.Managers
 
         private void Awake()
         {
+            if (instance == null)
+            {
+                instance = this;
+                DontDestroyOnLoad(gameObject);
+            }
+            else if (instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             InitializeQualityTable();
         }
 
@@ -56,6 +71,46 @@ namespace ArenaTactics.Managers
             int price = CalculatePrice(instance, quality);
 
             Debug.Log($"Generated: {instance.templateData.gladiatorName} ({randomRace.raceName} {randomClass.className}) - Level {level}, Quality: {quality}, Price: {price}g");
+
+            return instance;
+        }
+
+        public GladiatorInstance GenerateGladiatorWithClass(int level, GladiatorQuality quality, string className)
+        {
+            if (availableClasses == null || availableClasses.Length == 0 ||
+                availableRaces == null || availableRaces.Length == 0)
+            {
+                Debug.LogError("GladiatorGenerator: Available classes or races not assigned.");
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(className))
+            {
+                return GenerateGladiator(level, quality);
+            }
+
+            GladiatorClass targetClass = null;
+            foreach (GladiatorClass gladiatorClass in availableClasses)
+            {
+                if (gladiatorClass != null && gladiatorClass.className == className)
+                {
+                    targetClass = gladiatorClass;
+                    break;
+                }
+            }
+
+            if (targetClass == null)
+            {
+                Debug.LogWarning($"GladiatorGenerator: Class '{className}' not found. Generating random class.");
+                return GenerateGladiator(level, quality);
+            }
+
+            RaceData randomRace = availableRaces[Random.Range(0, availableRaces.Length)];
+            GladiatorData template = CreateTemplateData(targetClass, randomRace);
+            GladiatorInstance instance = new GladiatorInstance(template, level);
+
+            ApplyQualityVariance(instance, quality);
+            instance.templateData.gladiatorName = GenerateRandomName();
 
             return instance;
         }
