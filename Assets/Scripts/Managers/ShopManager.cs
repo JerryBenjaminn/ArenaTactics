@@ -71,6 +71,12 @@ namespace ArenaTactics.Managers
                 Debug.Log("[ShopManager] Tournament season initialized");
             }
 
+            if (startBattleButton != null)
+            {
+                bool hideStartBattle = tournamentManager != null && tournamentManager.HasActiveSeason();
+                startBattleButton.gameObject.SetActive(!hideStartBattle);
+            }
+
             TournamentView tournamentView = FindFirstObjectByType<TournamentView>(FindObjectsInactive.Include);
             if (tournamentView != null)
             {

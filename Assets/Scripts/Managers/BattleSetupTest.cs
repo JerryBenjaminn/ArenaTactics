@@ -83,6 +83,8 @@ public class BattleSetupTest : MonoBehaviour
             return;
         }
 
+        dataManager.ResetPostBattleEffectsForBattle();
+
         List<GladiatorInstance> squad = dataManager.activeSquad;
         if (squad == null || squad.Count == 0)
         {

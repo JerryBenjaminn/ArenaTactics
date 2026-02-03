@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using ArenaTactics.Data;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -158,6 +159,11 @@ namespace ArenaTactics.Managers
             SceneManager.LoadScene("Battle");
         }
 
+        public void ResetPostBattleEffectsForBattle()
+        {
+            postBattleEffectsProcessed = false;
+        }
+
         public void OnBattleComplete(bool victory, int goldReward)
         {
             lastBattleVictory = victory;
@@ -187,8 +193,23 @@ namespace ArenaTactics.Managers
             SceneManager.LoadScene("Shop");
         }
 
+        public void ProcessPostBattleEffectsExternal(string caller = "External")
+        {
+            Debug.Log($"[PersistentDataManager] ProcessPostBattleEffectsExternal called by: {caller}");
+            if (!postBattleEffectsProcessed)
+            {
+                ProcessPostBattleEffects(caller);
+                postBattleEffectsProcessed = true;
+            }
+            else
+            {
+                Debug.LogWarning($"ProcessPostBattleEffects already processed for this battle. Caller: {caller}");
+            }
+        }
+
         private void ProcessPostBattleEffects(string caller = "Unknown")
         {
+            Debug.Log($"[PersistentDataManager] ProcessPostBattleEffects called by: {caller}");
             Debug.Log($"=== ProcessPostBattleEffects START ({caller}) ===");
             Debug.Log($"Guard flag before check: {postBattleEffectsProcessed}");
             if (postBattleEffectsProcessed)
@@ -196,7 +217,9 @@ namespace ArenaTactics.Managers
                 Debug.LogWarning($"[{caller}] BLOCKED by guard flag!");
                 return;
             }
+            int injuredBefore = playerRoster.Count(g => g != null && g.status == GladiatorStatus.Injured);
             Debug.Log($"[{caller}] Processing effects for {playerRoster.Count} gladiators...");
+            Debug.Log($"[PersistentDataManager] Injured gladiators at start: {injuredBefore}");
             foreach (GladiatorInstance gladiator in playerRoster)
             {
                 if (gladiator == null)
@@ -205,7 +228,7 @@ namespace ArenaTactics.Managers
                 }
 
                 Debug.Log($"  {gladiator.templateData.gladiatorName}: Status={gladiator.status}, Injury={gladiator.injuryBattlesRemaining}, Decay={gladiator.decayBattlesRemaining}");
-                if (gladiator.status == GladiatorStatus.Injured)
+                if (gladiator.status == GladiatorStatus.Injured && gladiator.injuryBattlesRemaining > 0)
                 {
                     Debug.Log($"[{caller}] DECREMENTING injury for {gladiator.templateData.gladiatorName}");
                     int before = gladiator.injuryBattlesRemaining;
@@ -225,6 +248,11 @@ namespace ArenaTactics.Managers
                     }
                 }
 
+                if (gladiator.status == GladiatorStatus.Healthy)
+                {
+                    gladiator.currentHP = gladiator.maxHP;
+                }
+
                 if (gladiator.templateData != null &&
                     gladiator.templateData.race != null &&
                     gladiator.templateData.race.raceName == "Undead" &&
@@ -242,6 +270,8 @@ namespace ArenaTactics.Managers
             }
 
             postBattleEffectsProcessed = true;
+            int injuredAfter = playerRoster.Count(g => g != null && g.status == GladiatorStatus.Injured);
+            Debug.Log($"[PersistentDataManager] Injured gladiators after processing: {injuredAfter}");
             Debug.Log($"Guard flag set to true by {caller}");
             Debug.Log($"=== ProcessPostBattleEffects END ({caller}) ===");
         }

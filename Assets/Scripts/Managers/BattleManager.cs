@@ -406,6 +406,11 @@ public class BattleManager : MonoBehaviour
         ArenaTactics.Managers.PersistentDataManager dataManager = ArenaTactics.Managers.PersistentDataManager.Instance;
         if (dataManager != null)
         {
+            Debug.Log("[BattleManager] Battle complete. Calling ProcessPostBattleEffectsExternal...");
+            dataManager.ProcessPostBattleEffectsExternal("BattleManager.CompleteBattle");
+            int injuredCount = dataManager.playerRoster.Count(g => g != null && g.status == GladiatorStatus.Injured);
+            Debug.Log($"[BattleManager] After ProcessPostBattleEffects: {injuredCount} injured gladiators");
+
             TournamentManager tournamentManager = FindFirstObjectByType<TournamentManager>(FindObjectsInactive.Include);
             if (tournamentManager != null && tournamentManager.HasActiveMatch())
             {
@@ -436,6 +441,7 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
+        Debug.Log("[BattleManager] SaveBattleResultsToShop called");
         Debug.Log("=== Saving Battle Results to Shop ===");
 
         foreach (Gladiator gladiator in allGladiators)
