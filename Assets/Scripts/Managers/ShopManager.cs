@@ -104,6 +104,12 @@ namespace ArenaTactics.Managers
 
         private void SwitchTab(ShopTab tab)
         {
+            GladiatorEquipmentPanel equipmentPanelUI = FindFirstObjectByType<GladiatorEquipmentPanel>(FindObjectsInactive.Include);
+            if (equipmentPanelUI != null && equipmentPanelUI.gameObject.activeSelf)
+            {
+                equipmentPanelUI.gameObject.SetActive(false);
+            }
+
             currentTab = tab;
 
             if (recruitmentPanel != null)
