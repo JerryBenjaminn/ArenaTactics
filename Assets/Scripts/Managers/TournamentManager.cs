@@ -11,6 +11,7 @@ namespace ArenaTactics.Managers
         public const int RegularGoldReward = 300;
         public const int PlayoffGoldReward = 500;
         public const int FinalsGoldReward = 1000;
+        public const int ChampionBonusGold = 500;
 
         private static TournamentManager instance;
         public static TournamentManager Instance => instance;
@@ -129,7 +130,7 @@ namespace ArenaTactics.Managers
                 return;
             }
 
-            int goldReward = GetGoldRewardForPhase();
+            int goldReward = GetGoldRewardForMatch(winnerId, loserId);
             MatchResult result = new MatchResult(winnerId, loserId, winnerId, loserId, goldReward);
             matchResults.Add(result);
             if (currentSeason != null)
@@ -159,6 +160,7 @@ namespace ArenaTactics.Managers
             if (currentSeason.phase == SeasonData.SeasonPhase.Playoffs)
             {
                 UpdatePlayoffProgress();
+                SimulatePlayoffMatches();
             }
         }
 
@@ -199,6 +201,7 @@ namespace ArenaTactics.Managers
             currentSeason.finals = null;
 
             Debug.Log("[Tournament] Playoffs started: 1v4 and 2v3.");
+            SimulatePlayoffMatches();
         }
 
         public SeasonData.Match GetCurrentMatch()
@@ -289,9 +292,146 @@ namespace ArenaTactics.Managers
             }
             else if (currentSeason.finals != null && currentSeason.finals.isCompleted)
             {
-                currentSeason.phase = SeasonData.SeasonPhase.Completed;
-                Debug.Log($"[Tournament] Season complete. Champion: {currentSeason.finals.winnerId}");
+                CompleteSeason(currentSeason.finals.winnerId);
             }
+        }
+
+        private void SimulatePlayoffMatches()
+        {
+            if (currentSeason == null || currentSeason.phase != SeasonData.SeasonPhase.Playoffs)
+            {
+                return;
+            }
+
+            bool simulated = false;
+
+            if (currentSeason.semifinal1 != null && !currentSeason.semifinal1.isCompleted &&
+                !IsPlayerMatch(currentSeason.semifinal1))
+            {
+                SimulatePlayoffMatch(currentSeason.semifinal1);
+                simulated = true;
+            }
+
+            if (currentSeason.semifinal2 != null && !currentSeason.semifinal2.isCompleted &&
+                !IsPlayerMatch(currentSeason.semifinal2))
+            {
+                SimulatePlayoffMatch(currentSeason.semifinal2);
+                simulated = true;
+            }
+
+            UpdatePlayoffProgress();
+
+            if (currentSeason.finals != null && !currentSeason.finals.isCompleted &&
+                !IsPlayerMatch(currentSeason.finals))
+            {
+                SimulatePlayoffMatch(currentSeason.finals);
+                simulated = true;
+            }
+
+            if (currentSeason.finals != null && currentSeason.finals.isCompleted)
+            {
+                CompleteSeason(currentSeason.finals.winnerId);
+            }
+
+            if (simulated)
+            {
+                Debug.Log("[Tournament] Simulated AI playoff matches.");
+            }
+        }
+
+        private void SimulatePlayoffMatch(SeasonData.Match match)
+        {
+            if (match == null || match.isCompleted)
+            {
+                return;
+            }
+
+            AITeam team1 = GetAITeam(match.team1Id);
+            AITeam team2 = GetAITeam(match.team2Id);
+
+            float team1Budget = team1 != null ? team1.currentBudget : 2000f;
+            float team2Budget = team2 != null ? team2.currentBudget : 2000f;
+            float team1WinChance = team1Budget / Mathf.Max(1f, team1Budget + team2Budget);
+
+            bool team1Wins = Random.value < team1WinChance;
+            string winnerId = team1Wins ? match.team1Id : match.team2Id;
+            string loserId = team1Wins ? match.team2Id : match.team1Id;
+
+            int goldReward = GetGoldRewardForMatch(match);
+            MatchResult result = new MatchResult(match.team1Id, match.team2Id, winnerId, loserId, goldReward);
+            matchResults.Add(result);
+            if (currentSeason != null)
+            {
+                currentSeason.results.Add(result);
+            }
+
+            match.isCompleted = true;
+            match.winnerId = winnerId;
+
+            UpdateTeamRecord(winnerId, loserId, goldReward);
+            Debug.Log($"[Tournament] Playoff simulated: {GetTeamName(winnerId)} defeats {GetTeamName(loserId)}");
+        }
+
+        private void CompleteSeason(string championId)
+        {
+            if (currentSeason == null)
+            {
+                return;
+            }
+
+            currentSeason.phase = SeasonData.SeasonPhase.Completed;
+            Debug.Log($"[Tournament] Season complete. Champion: {GetTeamName(championId)}");
+
+            if (championId == PlayerTeamId)
+            {
+                PersistentDataManager dataManager = PersistentDataManager.Instance;
+                if (dataManager != null)
+                {
+                    dataManager.AddGold(ChampionBonusGold);
+                }
+            }
+            else
+            {
+                AITeam team = GetAITeam(championId);
+                if (team != null)
+                {
+                    team.goldEarned += ChampionBonusGold;
+                    team.currentBudget += ChampionBonusGold;
+                }
+            }
+        }
+
+        public int GetGoldRewardForMatch(SeasonData.Match match)
+        {
+            if (match == null)
+            {
+                return GetGoldRewardForPhase();
+            }
+
+            if (currentSeason != null && currentSeason.finals != null &&
+                match.team1Id == currentSeason.finals.team1Id &&
+                match.team2Id == currentSeason.finals.team2Id)
+            {
+                return FinalsGoldReward;
+            }
+
+            return currentSeason != null && currentSeason.phase == SeasonData.SeasonPhase.Playoffs
+                ? PlayoffGoldReward
+                : RegularGoldReward;
+        }
+
+        public int GetGoldRewardForMatch(string teamA, string teamB)
+        {
+            if (currentSeason != null && currentSeason.finals != null &&
+                ((currentSeason.finals.team1Id == teamA && currentSeason.finals.team2Id == teamB) ||
+                 (currentSeason.finals.team1Id == teamB && currentSeason.finals.team2Id == teamA)))
+            {
+                return FinalsGoldReward;
+            }
+
+            return currentSeason != null && currentSeason.phase == SeasonData.SeasonPhase.Playoffs
+                ? PlayoffGoldReward
+                : RegularGoldReward;
         }
 
         private void CreateAiTeams()

@@ -99,7 +99,10 @@ namespace ArenaTactics.UI
 
             if (startBattleButton != null)
             {
-                startBattleButton.interactable = !string.IsNullOrEmpty(matchText) && season.phase != SeasonData.SeasonPhase.Completed;
+                SeasonData.Match nextMatch = tournamentManager.GetCurrentMatch();
+                bool hasMatch = nextMatch != null;
+                startBattleButton.interactable = hasMatch && season.phase != SeasonData.SeasonPhase.Completed;
+                SetStartBattleButtonLabel(season, nextMatch);
                 startBattleButton.onClick.RemoveAllListeners();
                 startBattleButton.onClick.AddListener(OnStartBattle);
             }
@@ -196,6 +199,45 @@ namespace ArenaTactics.UI
                 : "TBD";
 
             return $"SEMIFINALS: {semi1} | {semi2}\nFINALS: {finals}";
+        }
+
+        private void SetStartBattleButtonLabel(SeasonData season, SeasonData.Match nextMatch)
+        {
+            TextMeshProUGUI buttonText = startBattleButton != null
+                ? startBattleButton.GetComponentInChildren<TextMeshProUGUI>()
+                : null;
+
+            if (buttonText == null)
+            {
+                return;
+            }
+
+            if (season.phase == SeasonData.SeasonPhase.Completed)
+            {
+                buttonText.text = "SEASON COMPLETE";
+                return;
+            }
+
+            if (nextMatch == null)
+            {
+                buttonText.text = "NO MATCH";
+                return;
+            }
+
+            if (season.phase == SeasonData.SeasonPhase.Playoffs)
+            {
+                if (season.finals != null && nextMatch == season.finals)
+                {
+                    buttonText.text = "FINALS";
+                }
+                else
+                {
+                    buttonText.text = "SEMIFINAL";
+                }
+                return;
+            }
+
+            buttonText.text = "START BATTLE";
         }
 
         private void ClearStandings()

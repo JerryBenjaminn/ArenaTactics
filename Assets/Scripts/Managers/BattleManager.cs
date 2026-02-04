@@ -414,6 +414,9 @@ public class BattleManager : MonoBehaviour
             TournamentManager tournamentManager = FindFirstObjectByType<TournamentManager>(FindObjectsInactive.Include);
             if (tournamentManager != null && tournamentManager.HasActiveMatch())
             {
+                SeasonData.Match activeMatch = tournamentManager.GetCurrentMatch();
+                goldReward = tournamentManager.GetGoldRewardForMatch(activeMatch);
+
                 string winnerId = victory ? TournamentManager.PlayerTeamId : tournamentManager.GetCurrentOpponentTeam()?.teamId;
                 string loserId = victory ? tournamentManager.GetCurrentOpponentTeam()?.teamId : TournamentManager.PlayerTeamId;
 
