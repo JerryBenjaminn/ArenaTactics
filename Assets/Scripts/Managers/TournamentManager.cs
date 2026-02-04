@@ -62,6 +62,16 @@ namespace ArenaTactics.Managers
             activeMatchTeam1Id = string.Empty;
             activeMatchTeam2Id = string.Empty;
 
+            if (enemyTeamGenerator == null)
+            {
+                Debug.LogWarning("[Tournament] EnemyTeamGenerator missing! Finding...");
+                enemyTeamGenerator = FindFirstObjectByType<EnemyTeamGenerator>(FindObjectsInactive.Include);
+                if (enemyTeamGenerator == null)
+                {
+                    Debug.LogError("[Tournament] EnemyTeamGenerator not found in scene!");
+                }
+            }
+
             CreateAiTeams();
             CreateSchedule();
 

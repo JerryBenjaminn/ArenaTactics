@@ -18,6 +18,7 @@ namespace ArenaTactics.UI
         public Transform standingsContainer;
         public GameObject standingsRowPrefab;
         public Button startBattleButton;
+        public Button startNewSeasonButton;
         public TextMeshProUGUI errorText;
 
         private TournamentManager tournamentManager;
@@ -107,6 +108,17 @@ namespace ArenaTactics.UI
                 startBattleButton.onClick.AddListener(OnStartBattle);
             }
 
+            if (startNewSeasonButton != null)
+            {
+                bool showNewSeason = season.phase == SeasonData.SeasonPhase.Completed;
+                startNewSeasonButton.gameObject.SetActive(showNewSeason);
+                startNewSeasonButton.onClick.RemoveAllListeners();
+                if (showNewSeason)
+                {
+                    startNewSeasonButton.onClick.AddListener(OnStartNewSeason);
+                }
+            }
+
             if (playoffInfoText != null)
             {
                 playoffInfoText.text = GetPlayoffText(season);
@@ -129,6 +141,18 @@ namespace ArenaTactics.UI
 
             tournamentManager.SetActiveMatch(nextMatch);
             SceneManager.LoadScene("Battle");
+        }
+
+        private void OnStartNewSeason()
+        {
+            if (tournamentManager == null)
+            {
+                return;
+            }
+
+            int nextSeason = tournamentManager.currentSeasonNumber + 1;
+            tournamentManager.StartNewSeason(nextSeason);
+            RefreshUI();
         }
 
         private string GetNextMatchText(SeasonData season)

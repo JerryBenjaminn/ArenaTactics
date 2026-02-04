@@ -6,6 +6,9 @@ namespace ArenaTactics.Managers
 {
     public class EnemyTeamGenerator : MonoBehaviour
     {
+        private static EnemyTeamGenerator instance;
+        public static EnemyTeamGenerator Instance => instance;
+
         [Header("References")]
         [SerializeField] private GladiatorGenerator gladiatorGenerator;
 
@@ -28,6 +31,15 @@ namespace ArenaTactics.Managers
 
         private void Awake()
         {
+            if (instance != null && instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+
             if (gladiatorGenerator == null)
             {
                 gladiatorGenerator = GladiatorGenerator.Instance;
